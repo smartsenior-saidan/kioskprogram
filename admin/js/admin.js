@@ -32,7 +32,8 @@ import { t, getLang, setLang, applyStaticI18n, onLangChange } from "./i18n.js";
 
 // ── State ───────────────────────────────────────────────────────────────────
 
-let stagedFiles = [];       // { file, type, previewUrl }
+let stagedFiles = [];       // { file, type, previewUrl } — gallery
+let stagedCover = null;    // { file, previewUrl } — cover photo
 let editingPersonId = null;
 let editingPerson = null;   // full person object while editing (for re-translation)
 let activeChart = null;     // Chart.js instance
@@ -348,7 +349,8 @@ function renderProfileTable(persons) {
             <th class="sortable" data-sort="last_name">${t("table.lastName")} ${sortIcon("last_name")}</th>
             <th class="sortable" data-sort="first_name">${t("table.firstName")} ${sortIcon("first_name")}</th>
             <th class="sortable" data-sort="death_date">${t("table.passed")} ${sortIcon("death_date")}</th>
-            <th>${t("table.plot")}</th>
+            <th>${t("table.section")}</th>
+            <th>${t("table.row")}</th>
             <th>${t("table.actions")}</th>
           </tr>
         </thead>
@@ -395,7 +397,8 @@ function profileRow(p, full = false) {
         </td>
         <td>${p.first_name || "—"}</td>
         <td>${death}</td>
-        <td>${p.plot || "—"}</td>
+        <td>${p.plot_section || "—"}</td>
+        <td>${p.plot_row || "—"}</td>
         <td>
           <div class="table-actions">
             <button class="btn-secondary" data-action="link" data-id="${p.id}">${t("btn.link")}</button>
@@ -446,13 +449,18 @@ function wireProfileActions(container, localProfiles) {
 
 function readForm() {
   const get = (id) => (document.getElementById(id)?.value || "").trim();
+  const section = get("plotSection");
+  const row     = get("plotRow");
+  const plot    = [section, row].filter(Boolean).join("-");
   return {
     first_name: get("firstName"),
     last_name: get("lastName"),
     family_name: get("familyName"),
     birth_date: get("birthDate"),
     death_date: get("deathDate"),
-    plot: get("plot"),
+    plot_section: section,
+    plot_row: row,
+    plot,          // combined for backward-compat display/search
     biography: get("biography"),
     presentation_url: get("presentationUrl"),
     related_persons: selectedRelated.map((p) => p.id),
@@ -562,20 +570,30 @@ async function handleSave(e) {
       } catch (e) { console.warn('[admin] bidirectional link failed:', e); }
     }
 
-    if (stagedFiles.length) {
-      setFormStatus(t("status.uploading", { n: stagedFiles.length }), "info");
+    const totalUploads = (stagedCover ? 1 : 0) + stagedFiles.length;
+    if (totalUploads > 0) {
+      setFormStatus(t("status.uploading", { n: totalUploads }), "info");
 
       const existing = await getDocs(
         tenantQuery(COLLECTIONS.media, where("person_id", "==", personId))
       );
       let order = existing.size;
 
+      if (stagedCover) {
+        setProgress(0);
+        const { url, path } = await uploadOne(stagedCover.file, personId, setProgress);
+        await addDoc(
+          collection(db, COLLECTIONS.media),
+          withTenant({ person_id: personId, file_type: "photo", role: "cover", storage_url: url, storage_path: path, display_order: -1 })
+        );
+      }
+
       for (const item of stagedFiles) {
         setProgress(0);
         const { url, path } = await uploadOne(item.file, personId, setProgress);
         await addDoc(
           collection(db, COLLECTIONS.media),
-          withTenant({ person_id: personId, file_type: item.type, storage_url: url, storage_path: path, display_order: order++ })
+          withTenant({ person_id: personId, file_type: item.type, role: "gallery", storage_url: url, storage_path: path, display_order: order++ })
         );
       }
       setProgress(100);
@@ -599,8 +617,10 @@ function resetForm() {
   if (form) form.reset();
   stagedFiles.forEach((f) => URL.revokeObjectURL(f.previewUrl));
   stagedFiles = [];
+  if (stagedCover) { URL.revokeObjectURL(stagedCover.previewUrl); stagedCover = null; }
   editingPersonId = null;
   renderPreviews();
+  renderCoverPreview();
   editingPerson = null;
   selectedRelated = [];
   renderFamilySelected();
@@ -624,7 +644,8 @@ function loadForEdit(person) {
   set("familyName",     person.family_name);
   set("birthDate",      person.birth_date);
   set("deathDate",      person.death_date);
-  set("plot",           person.plot);
+  set("plotSection",    person.plot_section);
+  set("plotRow",        person.plot_row);
   set("biography",      person.biography);
   set("presentationUrl", person.presentation_url);
 
@@ -732,11 +753,41 @@ function classifyFile(file) {
   return file.type.startsWith("video/") ? "video" : "photo";
 }
 
+function stageCover(file) {
+  if (stagedCover) URL.revokeObjectURL(stagedCover.previewUrl);
+  stagedCover = { file, previewUrl: URL.createObjectURL(file) };
+  renderCoverPreview();
+}
+
 function stageFiles(fileList) {
   for (const file of fileList) {
     stagedFiles.push({ file, type: classifyFile(file), previewUrl: URL.createObjectURL(file) });
   }
   renderPreviews();
+}
+
+function renderCoverPreview() {
+  const wrap = document.getElementById("coverPreview");
+  if (!wrap) return;
+  wrap.innerHTML = "";
+  if (!stagedCover) return;
+
+  const img = Object.assign(document.createElement("img"), {
+    src: stagedCover.previewUrl,
+    alt: "Cover preview",
+    className: "cover-thumb",
+  });
+  const remove = Object.assign(document.createElement("button"), {
+    className: "cover-remove",
+    type: "button",
+    textContent: "✕ Remove",
+  });
+  remove.addEventListener("click", () => {
+    URL.revokeObjectURL(stagedCover.previewUrl);
+    stagedCover = null;
+    renderCoverPreview();
+  });
+  wrap.append(img, remove);
 }
 
 function renderPreviews() {
@@ -907,7 +958,28 @@ export function initAdminPortal() {
   document.getElementById("profileForm")?.addEventListener("submit", handleSave);
   document.getElementById("resetBtn")?.addEventListener("click", resetForm);
 
-  // Dropzone
+  // Cover photo dropzone
+  const dropzoneCover = document.getElementById("dropzoneCover");
+  const fileInputCover = document.getElementById("fileInputCover");
+  if (dropzoneCover && fileInputCover) {
+    dropzoneCover.addEventListener("click", () => fileInputCover.click());
+    fileInputCover.addEventListener("change", (e) => {
+      if (e.target.files[0]) stageCover(e.target.files[0]);
+      fileInputCover.value = "";
+    });
+    ["dragenter", "dragover"].forEach((ev) =>
+      dropzoneCover.addEventListener(ev, (e) => { e.preventDefault(); dropzoneCover.classList.add("dragover"); })
+    );
+    ["dragleave", "drop"].forEach((ev) =>
+      dropzoneCover.addEventListener(ev, (e) => { e.preventDefault(); dropzoneCover.classList.remove("dragover"); })
+    );
+    dropzoneCover.addEventListener("drop", (e) => {
+      const file = e.dataTransfer?.files?.[0];
+      if (file && file.type.startsWith("image/")) stageCover(file);
+    });
+  }
+
+  // Gallery dropzone
   const dropzone  = document.getElementById("dropzone");
   const fileInput = document.getElementById("fileInput");
   if (dropzone && fileInput) {

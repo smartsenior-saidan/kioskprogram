@@ -177,9 +177,15 @@
                     </div>
                   </div>
 
-                  <div class="field">
-                    <label for="plot" data-i18n="form.plot">Plot / location</label>
-                    <input id="plot" type="text" placeholder="e.g. Section C, Row 12" data-i18n-ph="ph.plot" />
+                  <div class="form-row">
+                    <div class="field">
+                      <label for="plotSection" data-i18n="form.plotSection">Section</label>
+                      <input id="plotSection" type="text" placeholder="e.g. C" data-i18n-ph="ph.plotSection" />
+                    </div>
+                    <div class="field">
+                      <label for="plotRow" data-i18n="form.plotRow">Row / plot number</label>
+                      <input id="plotRow" type="text" placeholder="e.g. 12" data-i18n-ph="ph.plotRow" />
+                    </div>
                   </div>
 
                   <div class="field">
@@ -205,18 +211,37 @@
                     </div>
                   </div>
 
-                  <div class="field">
-                    <label data-i18n="form.media">Photos &amp; videos</label>
-                    <div class="dropzone" id="dropzone">
-                      <svg class="dropzone-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path stroke-linecap="round" stroke-linejoin="round" d="M3 16.5v2.25A2.25 2.25 0 005.25 21h13.5A2.25 2.25 0 0021 18.75V16.5m-13.5-9L12 3m0 0l4.5 4.5M12 3v13.5"/></svg>
-                      <p data-i18n-html="dropzone.main"><strong>Tap to choose</strong> or drag files here</p>
-                      <p class="field-hint" data-i18n="dropzone.hint">JPG, PNG, MP4, WebM</p>
-                      <input id="fileInput" type="file" accept="image/*,video/*" multiple />
+                  <div class="media-columns">
+
+                    <!-- Cover photo -->
+                    <div class="field media-col">
+                      <label data-i18n="form.coverPhoto">Cover photo</label>
+                      <p class="field-hint" data-i18n="hint.coverPhoto">Single portrait photo shown on the kiosk profile card.</p>
+                      <div class="dropzone dropzone-cover" id="dropzoneCover">
+                        <svg class="dropzone-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path stroke-linecap="round" stroke-linejoin="round" d="M15.75 6a3.75 3.75 0 11-7.5 0 3.75 3.75 0 017.5 0zM4.501 20.118a7.5 7.5 0 0114.998 0A17.933 17.933 0 0112 21.75c-2.676 0-5.216-.584-7.499-1.632z"/></svg>
+                        <p><strong>Tap to choose</strong></p>
+                        <p class="field-hint">JPG or PNG</p>
+                        <input id="fileInputCover" type="file" accept="image/*" />
+                      </div>
+                      <div class="cover-preview" id="coverPreview"></div>
                     </div>
-                    <div class="upload-progress hidden" id="uploadProgress">
-                      <div class="progress-bar" id="progressBar"></div>
+
+                    <!-- Gallery -->
+                    <div class="field media-col">
+                      <label data-i18n="form.gallery">Gallery &amp; videos</label>
+                      <p class="field-hint" data-i18n="hint.gallery">Multiple photos or videos — works &amp; life moments shown in the slideshow.</p>
+                      <div class="dropzone" id="dropzone">
+                        <svg class="dropzone-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path stroke-linecap="round" stroke-linejoin="round" d="M3 16.5v2.25A2.25 2.25 0 005.25 21h13.5A2.25 2.25 0 0021 18.75V16.5m-13.5-9L12 3m0 0l4.5 4.5M12 3v13.5"/></svg>
+                        <p data-i18n-html="dropzone.main"><strong>Tap to choose</strong> or drag files here</p>
+                        <p class="field-hint" data-i18n="dropzone.hint">JPG, PNG, MP4, WebM</p>
+                        <input id="fileInput" type="file" accept="image/*,video/*" multiple />
+                      </div>
+                      <div class="upload-progress hidden" id="uploadProgress">
+                        <div class="progress-bar" id="progressBar"></div>
+                      </div>
+                      <div class="media-preview" id="mediaPreview"></div>
                     </div>
-                    <div class="media-preview" id="mediaPreview"></div>
+
                   </div>
 
                   <div class="form-actions">

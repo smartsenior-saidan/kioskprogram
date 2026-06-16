@@ -711,6 +711,63 @@
   line-height: 1;
 }
 
+/* ---- Two-column media layout ---------------------------------------------- */
+
+.media-columns {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 24px;
+  margin-top: 4px;
+}
+
+.media-col { margin: 0; }
+
+/* Cover dropzone — taller to encourage portrait crop */
+.dropzone-cover {
+  min-height: 160px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+}
+
+/* Cover photo preview */
+.cover-preview {
+  margin-top: 10px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  align-items: flex-start;
+}
+
+.cover-thumb {
+  width: 100%;
+  max-width: 200px;
+  aspect-ratio: 3 / 4;
+  object-fit: cover;
+  border-radius: 10px;
+  border: 1px solid var(--color-border);
+  display: block;
+}
+
+.cover-remove {
+  font-size: 0.78rem;
+  color: var(--color-danger);
+  background: none;
+  border: 1px solid var(--color-danger);
+  border-radius: 6px;
+  padding: 3px 10px;
+  cursor: pointer;
+  min-height: unset;
+  min-width: unset;
+}
+
+.cover-remove:hover { background: rgba(255, 59, 48, 0.06); }
+
+@media (max-width: 700px) {
+  .media-columns { grid-template-columns: 1fr; }
+}
+
 /* ---- NFC / QR ------------------------------------------------------------- */
 
 .url-row { display: flex; gap: 8px; }
