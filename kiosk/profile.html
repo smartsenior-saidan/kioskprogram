@@ -1,0 +1,99 @@
+<!DOCTYPE html>
+<html lang="ja" class="kiosk">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover" />
+    <title>電子墓誌 — SmartSenior</title>
+    <link rel="stylesheet" href="css/style.css" />
+    <link rel="stylesheet" href="css/kiosk.css" />
+    <!-- Pins this kiosk to its memorial site (tenant). Runs before modules. -->
+    <script src="js/config.js"></script>
+  </head>
+  <body class="profile-page lang-ja">
+
+    <!-- Decorative gold frame is drawn via .profile-page::after -->
+
+    <!-- ── Top controls ── -->
+    <button class="m-btn-back" id="pnavBack">◀ 戻る</button>
+    <button class="m-btn-end"  id="pnavEnd">参拝終了</button>
+
+    <!-- ── Loading ── -->
+    <div class="p-loader" id="loader">
+      <div class="spinner"></div>
+      <p>読み込み中…</p>
+    </div>
+
+    <!-- ── Premade presentation embed (used when a URL is set) ── -->
+    <div class="m-embed hidden" id="pEmbed">
+      <iframe id="pEmbedFrame" title="Memorial presentation"
+              allow="autoplay; fullscreen; encrypted-media; picture-in-picture"
+              allowfullscreen referrerpolicy="no-referrer"></iframe>
+    </div>
+
+    <!-- ── Main stage (revealed after load) ── -->
+    <div class="m-stage hidden" id="pMain">
+
+      <!-- Right column: posthumous name + name (vertical for JA) -->
+      <div class="m-side m-side-right">
+        <div class="m-kaimyo hidden" id="pKaimyo"></div>
+        <h1 class="m-name" id="pName"></h1>
+      </div>
+
+      <!-- Center: framed photo / slideshow -->
+      <div class="m-center">
+        <div class="m-photo" id="pPhoto">
+          <div class="p-slides" id="pSlides"></div>
+          <div class="p-no-photo hidden" id="pNoPhoto">
+            <div class="p-initials" id="pInitials"></div>
+          </div>
+        </div>
+        <div class="m-dots hidden" id="pDots"></div>
+      </div>
+
+      <!-- Left column: death date + age + plot (vertical for JA) -->
+      <div class="m-side m-side-left">
+        <div class="m-info hidden" id="pDeathBlock">
+          <span class="m-info-label" id="pDeathLabel">没日</span>
+          <span class="m-info-value" id="pDeathDate"></span>
+        </div>
+        <div class="m-info hidden" id="pAgeBlock">
+          <span class="m-info-label" id="pAgeLabel">享年</span>
+          <span class="m-info-value" id="pAge"></span>
+        </div>
+        <div class="m-info hidden" id="pPlotBlock">
+          <span class="m-info-label" id="pPlotLabel">区画</span>
+          <span class="m-info-value" id="pPlot"></span>
+        </div>
+      </div>
+
+    </div>
+
+    <!-- ── Family members ── -->
+    <div class="m-family hidden" id="pFamily">
+      <h2 class="m-family-title" id="pFamilyTitle">ご家族</h2>
+      <div class="m-family-list" id="pFamilyList"></div>
+    </div>
+
+    <!-- ── Bottom bar: memorial video + biography toggle ── -->
+    <div class="m-bottom hidden" id="pBottom">
+      <button class="m-link hidden" id="pBioToggle">ご略歴を読む</button>
+      <div class="m-video-wrap hidden" id="pVideoWrap">
+        <video class="m-video" id="pVideo" controls playsinline preload="metadata"></video>
+      </div>
+    </div>
+
+    <!-- ── Biography overlay ── -->
+    <div class="m-bio-overlay hidden" id="pBioOverlay">
+      <div class="m-bio-card">
+        <h2 class="m-bio-title" id="pBioLabel">ご略歴</h2>
+        <p class="m-bio-text" id="pBio"></p>
+        <button class="m-bio-close" id="pBioClose">閉じる</button>
+      </div>
+    </div>
+
+    <script type="module">
+      import { initProfileScreen } from "./js/profile.js";
+      initProfileScreen();
+    </script>
+  </body>
+</html>

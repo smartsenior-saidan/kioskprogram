@@ -1,0 +1,165 @@
+/* ==========================================================================
+   SmartSenior Admin — Login page (Apple-style)
+   ========================================================================== */
+
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+body {
+  font-family: -apple-system, BlinkMacSystemFont, "SF Pro Text", "Segoe UI", sans-serif;
+  font-size: 15px;
+  background: #F5F5F7;
+  color: #1D1D1F;
+  min-height: 100vh;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 24px;
+  -webkit-font-smoothing: antialiased;
+}
+
+/* ---- Card ------------------------------------------------------------------ */
+
+.login-wrap {
+  width: 100%;
+  max-width: 400px;
+}
+
+.login-card {
+  background: #fff;
+  border-radius: 20px;
+  padding: 44px 40px 36px;
+  box-shadow: 0 2px 24px rgba(0, 0, 0, 0.08);
+}
+
+/* ---- Brand ----------------------------------------------------------------- */
+
+.login-brand {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  margin-bottom: 36px;
+}
+
+.login-logo {
+  width: 56px;
+  height: 56px;
+  border-radius: 14px;
+  background: #1D1D1F;
+  color: #fff;
+  font-size: 1.6rem;
+  font-weight: 700;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  letter-spacing: -1px;
+  margin-bottom: 14px;
+}
+
+.login-title {
+  font-size: 1.3rem;
+  font-weight: 700;
+  letter-spacing: -0.4px;
+  color: #1D1D1F;
+  margin-bottom: 4px;
+}
+
+.login-subtitle {
+  font-size: 0.9rem;
+  color: #6E6E73;
+}
+
+/* ---- Status ---------------------------------------------------------------- */
+
+.login-status {
+  padding: 12px 14px;
+  border-radius: 12px;
+  font-size: 0.88rem;
+  font-weight: 500;
+  margin-bottom: 20px;
+  line-height: 1.4;
+}
+
+.login-status.error   { background: #FFF2F2; color: #C0392B; border: 1px solid #FECACA; }
+.login-status.success { background: #F0FFF4; color: #15803D; border: 1px solid #BBF7D0; }
+.login-status.info    { background: #EFF6FF; color: #1D4ED8; border: 1px solid #BFDBFE; }
+
+/* ---- Form fields ----------------------------------------------------------- */
+
+.field {
+  margin-bottom: 14px;
+}
+
+.field label {
+  display: block;
+  font-size: 0.85rem;
+  font-weight: 600;
+  color: #1D1D1F;
+  margin-bottom: 6px;
+}
+
+.field input {
+  width: 100%;
+  height: 46px;
+  padding: 0 14px;
+  font-size: 0.95rem;
+  font-family: inherit;
+  color: #1D1D1F;
+  background: #fff;
+  border: 1.5px solid #D2D2D7;
+  border-radius: 12px;
+  outline: none;
+  transition: border-color 0.15s ease, box-shadow 0.15s ease;
+}
+
+.field input::placeholder { color: #AEAEB2; }
+
+.field input:focus {
+  border-color: #0071E3;
+  box-shadow: 0 0 0 3px rgba(0, 113, 227, 0.15);
+}
+
+/* ---- Buttons --------------------------------------------------------------- */
+
+.btn-primary {
+  width: 100%;
+  height: 46px;
+  margin-top: 8px;
+  background: #1D1D1F;
+  color: #fff;
+  font-family: inherit;
+  font-size: 0.95rem;
+  font-weight: 600;
+  border: none;
+  border-radius: 12px;
+  cursor: pointer;
+  transition: background 0.15s ease, opacity 0.15s ease;
+  letter-spacing: -0.1px;
+}
+
+.btn-primary:hover { background: #3A3A3C; }
+
+.btn-primary:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.btn-forgot {
+  display: block;
+  width: 100%;
+  margin-top: 16px;
+  background: none;
+  border: none;
+  color: #0071E3;
+  font-family: inherit;
+  font-size: 0.88rem;
+  font-weight: 500;
+  cursor: pointer;
+  text-align: center;
+  padding: 4px;
+}
+
+.btn-forgot:hover { color: #0077ED; text-decoration: underline; }
+
+/* ---- Hidden ---------------------------------------------------------------- */
+
+.hidden { display: none !important; }

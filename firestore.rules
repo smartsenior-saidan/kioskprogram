@@ -1,0 +1,74 @@
+rules_version = '2';
+
+// SmartSenior — multi-tenant memorial kiosk.
+//
+// Tenant isolation model:
+//   • Each staff login has a /users/{uid} doc holding their `tenant_id`.
+//   • Admin writes are allowed ONLY when the document's tenant_id matches the
+//     signed-in user's tenant_id (read live from /users, never trusted from
+//     the client). This is what actually splits the database per memorial site.
+//   • Memorial content (persons, media) is publicly READABLE because the
+//     visitor-facing kiosk runs without authentication. Each kiosk is pinned to
+//     one tenant at the query level, but reads themselves are open.
+
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    function isSignedIn() {
+      return request.auth != null;
+    }
+
+    // The signed-in user's assigned tenant, read from their /users record.
+    function userTenant() {
+      return get(/databases/$(database)/documents/users/$(request.auth.uid)).data.tenant_id;
+    }
+
+    function userExists() {
+      return isSignedIn()
+        && exists(/databases/$(database)/documents/users/$(request.auth.uid));
+    }
+
+    // True when the signed-in user belongs to tenant `t`.
+    function ownsTenant(t) {
+      return userExists() && userTenant() == t;
+    }
+
+    // ── Staff accounts ──────────────────────────────────────────────────────
+    match /users/{uid} {
+      allow read:  if isSignedIn() && request.auth.uid == uid;
+      allow write: if false;
+    }
+
+    // ── Memorial profiles ───────────────────────────────────────────────────
+    match /deceased_persons/{id} {
+      allow read:          if true;                                   // public kiosk
+      allow create:        if ownsTenant(request.resource.data.tenant_id);
+      allow update, delete: if ownsTenant(resource.data.tenant_id);
+    }
+
+    // ── Photos / videos ─────────────────────────────────────────────────────
+    match /media_files/{id} {
+      allow read:          if true;                                   // public kiosk
+      allow create:        if ownsTenant(request.resource.data.tenant_id);
+      allow update, delete: if ownsTenant(resource.data.tenant_id);
+    }
+
+    // ── Analytics events ────────────────────────────────────────────────────
+    match /search_events/{id} {
+      allow create:        if request.resource.data.tenant_id is string;
+      allow read:          if ownsTenant(resource.data.tenant_id);
+      allow update, delete: if false;
+    }
+
+    // ── Kiosk devices ───────────────────────────────────────────────────────
+    match /kiosk_devices/{id} {
+      allow read:  if true;
+      allow write: if false;
+    }
+
+    // Everything else: deny.
+    match /{document=**} {
+      allow read, write: if false;
+    }
+  }
+}

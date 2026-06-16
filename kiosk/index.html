@@ -1,0 +1,342 @@
+<!DOCTYPE html>
+<html lang="ja" class="kiosk">
+  <head>
+    <meta charset="UTF-8" />
+    <meta
+      name="viewport"
+      content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover"
+    />
+    <title>SmartSenior — 電子墓誌検索</title>
+    <link rel="stylesheet" href="css/style.css" />
+    <link rel="stylesheet" href="css/kiosk.css" />
+    <!-- Pins this kiosk to its memorial site (tenant). Runs before modules. -->
+    <script src="js/config.js"></script>
+  </head>
+  <body>
+
+    <!-- ══ Language toggle (always visible) ══ -->
+    <div class="lang-switcher" id="langSwitcher">
+      <button class="lang-btn active" data-lang="ja">日本語</button>
+      <button class="lang-btn"        data-lang="en">English</button>
+    </div>
+
+    <!-- ══════════════════════════════════════════════════════
+         HOME SCREEN
+         ═══════════════════════════════════════════════════ -->
+    <div id="screen-home" class="screen screen-home">
+
+      <div class="home-brand">
+        <div class="home-logo">S</div>
+        <span class="home-brand-name">SmartSenior</span>
+      </div>
+
+      <div class="home-greeting">
+        <p class="home-greeting-main" data-i18n="greetingMain"></p>
+        <p class="home-greeting-sub"  data-i18n="greetingSub"></p>
+      </div>
+
+      <button class="home-start-btn" id="startBtn" data-i18n="startBtn"></button>
+      <p class="home-start-hint" data-i18n="startHint"></p>
+
+      <p class="home-ic-note" data-i18n="icNote"></p>
+
+    </div>
+
+    <!-- ══════════════════════════════════════════════════════
+         SEARCH SCREEN
+         ═══════════════════════════════════════════════════ -->
+    <div id="screen-search" class="screen screen-search hidden">
+
+      <!-- Top bar -->
+      <div class="search-topbar">
+        <button class="search-topbar-back btn-secondary" id="backBtn" data-i18n="backBtn"></button>
+        <div class="search-topbar-title">
+          <h2 data-i18n="searchTitle"></h2>
+          <p  data-i18n="searchSub"></p>
+        </div>
+        <button class="search-topbar-end" id="endVisitBtn" data-i18n="endVisit"></button>
+      </div>
+
+      <!-- Search input -->
+      <div class="search-input-row">
+        <div class="search-input-wrap">
+          <input
+            type="text"
+            id="searchInput"
+            inputmode="none"
+            autocomplete="off"
+            spellcheck="false"
+            aria-label="Search"
+            readonly
+          />
+          <button class="search-clear-btn" id="searchClearBtn" aria-label="Clear">✕</button>
+        </div>
+        <button class="search-go-btn" id="searchButton" data-i18n="searchBtn"></button>
+      </div>
+
+      <!-- Results -->
+      <div class="search-results-panel kiosk-scroll" id="results" aria-live="polite"></div>
+
+      <!-- Keyboard -->
+      <div class="keyboard-area" id="keyboardArea">
+        <div class="kb-body">
+          <div class="kb-main"    id="kbMain"></div>
+          <div class="kb-special" id="kbSpecial"></div>
+        </div>
+        <div class="kb-bottom">
+          <button class="kb-space"     id="kbSpace"    data-i18n="spaceBtn"></button>
+          <button class="kb-clear-all" id="kbClearAll" data-i18n="clearAllBtn"></button>
+        </div>
+      </div>
+
+    </div>
+
+    <script type="module">
+      import { initSearchScreen } from "./js/search.js";
+
+      // ── Translations ──────────────────────────────────────────────────
+      const STRINGS = {
+        ja: {
+          greetingMain: 'ご来館ありがとうございます。\n先祖・故人様の電子墓誌を\nご案内いたします。',
+          greetingSub:  'お名前を検索すると、お写真・ご略歴・ご命日などをご覧になれます。',
+          startBtn:     '氏名検索スタート',
+          startHint:    '電子墓誌の閲覧、および納骨場所の番号をご確認いただけます',
+          icNote:       '※ ICカードをお持ちの方は、カードリーダーにカードをかざしてください',
+          backBtn:      '◀ 戻る',
+          searchTitle:  '名前検索（姓 → 名と入力）',
+          searchSub:    '姓のみ・名のみ・途中までの入力でも検索できます',
+          endVisit:     '参拝終了',
+          searchPlaceholder: 'こちらに名前が表示されます…',
+          searchBtn:    '検索',
+          spaceBtn:     'スペース',
+          clearAllBtn:  '全消去',
+          noResults:    '該当する方が見つかりませんでした。<br>別のお名前や姓のみでお試しください。',
+          unavailable:  '現在検索を利用できません。',
+        },
+        en: {
+          greetingMain: 'Welcome.\nWe are honored by your visit.',
+          greetingSub:  'Search by name to view memorials, photos, and life stories.',
+          startBtn:     'Search by Name',
+          startHint:    'You can also look up plot location numbers.',
+          icNote:       '※ If you have an IC card, please hold it over the card reader.',
+          backBtn:      '◀ Back',
+          searchTitle:  'Search by Name',
+          searchSub:    'You may search by last name, first name, or partial spelling.',
+          endVisit:     'End Visit',
+          searchPlaceholder: 'Name will appear here…',
+          searchBtn:    'Search',
+          spaceBtn:     'Space',
+          clearAllBtn:  'Clear',
+          noResults:    'No matches found. Try searching by last name only.',
+          unavailable:  'Search is unavailable right now.',
+        },
+      };
+
+      // ── Language state ────────────────────────────────────────────────
+      let currentLang = sessionStorage.getItem('kiosk_lang') || 'ja';
+
+      function t(key) {
+        return STRINGS[currentLang][key] || STRINGS['ja'][key] || key;
+      }
+
+      function applyLang() {
+        document.documentElement.lang = currentLang;
+        sessionStorage.setItem('kiosk_lang', currentLang);
+
+        // Update all data-i18n elements
+        document.querySelectorAll('[data-i18n]').forEach(el => {
+          const key = el.dataset.i18n;
+          el.textContent = t(key);
+        });
+
+        // Placeholder needs setAttribute
+        document.getElementById('searchInput').placeholder = t('searchPlaceholder');
+
+        // Highlight active lang button
+        document.querySelectorAll('.lang-btn').forEach(btn => {
+          btn.classList.toggle('active', btn.dataset.lang === currentLang);
+        });
+
+        // Rebuild keyboard for the new language
+        buildKeyboard(currentLang);
+      }
+
+      // ── Keyboard layouts ──────────────────────────────────────────────
+
+      const KB_HIRAGANA_ROWS = [
+        ['あ','か','さ','た','な','は','ま','や','ら','わ'],
+        ['い','き','し','ち','に','ひ','み','ゆ','り','を'],
+        ['う','く','す','つ','ぬ','ふ','む','よ','る','ん'],
+        ['え','け','せ','て','ね','へ','め', null,'れ', null],
+        ['お','こ','そ','と','の','ほ','も','ろ', null, null],
+        ['ぁ','ぃ','ぅ','ぇ','ぉ','ゃ','ゅ','ょ','っ','ゎ'],
+      ];
+
+      // Special column (one slot per row)
+      const KB_HIRAGANA_SPECIAL = [
+        { type:'action', action:'bs',    label:'⌫', sub:'削除' },
+        { type:'empty' },
+        { type:'action', action:'left',  label:'←' },
+        { type:'action', action:'right', label:'→' },
+        { type:'char',   char:'ー',      label:'ー' },
+        { type:'char',   char:'。',      label:'。' },
+      ];
+
+      const KB_QWERTY_ROWS = [
+        ['Q','W','E','R','T','Y','U','I','O','P'],
+        ['A','S','D','F','G','H','J','K','L', null],
+        ['Z','X','C','V','B','N','M', null, null, null],
+        ['1','2','3','4','5','6','7','8','9','0'],
+      ];
+
+      const KB_QWERTY_SPECIAL = [
+        { type:'action', action:'bs',    label:'⌫', sub:'Del' },
+        { type:'empty' },
+        { type:'action', action:'left',  label:'←' },
+        { type:'action', action:'right', label:'→' },
+      ];
+
+      function buildKeyboard(lang) {
+        const grid    = document.getElementById('kbMain');
+        const special = document.getElementById('kbSpecial');
+        grid.innerHTML    = '';
+        special.innerHTML = '';
+
+        const rows        = lang === 'en' ? KB_QWERTY_ROWS        : KB_HIRAGANA_ROWS;
+        const specialDefs = lang === 'en' ? KB_QWERTY_SPECIAL     : KB_HIRAGANA_SPECIAL;
+
+        // Set column count via inline style so grid adapts
+        const colCount = rows[0].length;
+        grid.style.gridTemplateColumns = `repeat(${colCount}, 1fr)`;
+        grid.style.gridTemplateRows    = `repeat(${rows.length}, 1fr)`;
+
+        rows.forEach(row => {
+          row.forEach(ch => {
+            const btn = document.createElement('button');
+            btn.className = ch ? 'kb-key' : 'kb-key empty';
+            btn.textContent = ch || '';
+            if (ch) btn.dataset.char = ch;
+            grid.appendChild(btn);
+          });
+        });
+
+        specialDefs.forEach(spec => {
+          const btn = document.createElement('button');
+          if (spec.type === 'empty') {
+            btn.className = 'kb-key empty';
+            btn.disabled  = true;
+          } else if (spec.type === 'action') {
+            btn.className = 'kb-key action';
+            btn.innerHTML = spec.sub
+              ? `${spec.label}<span class="kb-key-sub">${spec.sub}</span>`
+              : spec.label;
+            btn.dataset.action = spec.action;
+          } else {
+            btn.className      = 'kb-key';
+            btn.textContent    = spec.label;
+            btn.dataset.char   = spec.char;
+          }
+          special.appendChild(btn);
+        });
+      }
+
+      // ── Keyboard input ────────────────────────────────────────────────
+      const input = document.getElementById('searchInput');
+
+      function getCaretPos() {
+        return typeof input.selectionStart === 'number' ? input.selectionStart : input.value.length;
+      }
+      function setCaretPos(pos) {
+        try { input.setSelectionRange(pos, pos); } catch(_) {}
+      }
+
+      function handleKeyInput(e) {
+        const btn    = e.target.closest('[data-char],[data-action]');
+        if (!btn) return;
+        const ch     = btn.dataset.char;
+        const action = btn.dataset.action;
+        const val    = input.value;
+        const pos    = getCaretPos();
+
+        if (ch) {
+          input.value = val.slice(0, pos) + ch + val.slice(pos);
+          setCaretPos(pos + 1);
+        } else if (action === 'bs') {
+          if (pos > 0) {
+            input.value = val.slice(0, pos - 1) + val.slice(pos);
+            setCaretPos(pos - 1);
+          }
+        } else if (action === 'left') {
+          setCaretPos(Math.max(0, pos - 1));
+        } else if (action === 'right') {
+          setCaretPos(Math.min(val.length, pos + 1));
+        }
+        input.dispatchEvent(new Event('input', { bubbles: true }));
+      }
+
+      document.getElementById('kbMain').addEventListener('click', handleKeyInput);
+      document.getElementById('kbSpecial').addEventListener('click', handleKeyInput);
+
+      document.getElementById('kbSpace').addEventListener('click', () => {
+        const pos = getCaretPos();
+        const val = input.value;
+        const sp  = currentLang === 'ja' ? '　' : ' '; // full-width for JP
+        input.value = val.slice(0, pos) + sp + val.slice(pos);
+        setCaretPos(pos + 1);
+        input.dispatchEvent(new Event('input', { bubbles: true }));
+      });
+
+      const clearInput = () => {
+        input.value = '';
+        input.dispatchEvent(new Event('input', { bubbles: true }));
+        document.getElementById('results').innerHTML = '';
+      };
+
+      document.getElementById('kbClearAll').addEventListener('click', clearInput);
+      document.getElementById('searchClearBtn').addEventListener('click', clearInput);
+
+      // ── Screen navigation ─────────────────────────────────────────────
+      const homeScreen   = document.getElementById('screen-home');
+      const searchScreen = document.getElementById('screen-search');
+
+      function showSearch() {
+        homeScreen.classList.add('hidden');
+        searchScreen.classList.remove('hidden');
+      }
+      function showHome() {
+        searchScreen.classList.add('hidden');
+        homeScreen.classList.remove('hidden');
+        clearInput();
+      }
+
+      document.getElementById('startBtn').addEventListener('click', showSearch);
+      document.getElementById('backBtn').addEventListener('click', showHome);
+      document.getElementById('endVisitBtn').addEventListener('click', showHome);
+
+      // ── Language switcher ─────────────────────────────────────────────
+      document.getElementById('langSwitcher').addEventListener('click', e => {
+        const btn = e.target.closest('[data-lang]');
+        if (!btn || btn.dataset.lang === currentLang) return;
+        currentLang = btn.dataset.lang;
+        applyLang();
+      });
+
+      // ── Boot ──────────────────────────────────────────────────────────
+      applyLang();
+      initSearchScreen();
+
+      // Restore search screen if coming back from family/profile page
+      if (new URLSearchParams(window.location.search).get('restore') === 'search') {
+        showSearch();
+        const lastQuery = sessionStorage.getItem('kiosk_last_query');
+        if (lastQuery) {
+          const searchInput = document.getElementById('searchInput');
+          if (searchInput) {
+            searchInput.value = lastQuery;
+            searchInput.dispatchEvent(new Event('input', { bubbles: true }));
+          }
+        }
+      }
+    </script>
+  </body>
+</html>

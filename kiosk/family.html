@@ -1,0 +1,118 @@
+<!DOCTYPE html>
+<html lang="ja" class="kiosk">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover" />
+    <title>ご家族 — SmartSenior</title>
+    <link rel="stylesheet" href="css/style.css" />
+    <link rel="stylesheet" href="css/kiosk.css" />
+    <script src="js/config.js"></script>
+  </head>
+  <body class="family-page lang-ja">
+
+    <button class="m-btn-back" id="fnavBack">◀ 戻る</button>
+    <button class="m-btn-end"  id="fnavEnd">参拝終了</button>
+
+    <div class="f-loader" id="loader">
+      <div class="spinner"></div>
+      <p>読み込み中…</p>
+    </div>
+
+    <div class="f-stage hidden" id="fMain">
+      <h1 class="f-family-name" id="fFamilyName"></h1>
+      <p  class="f-subtitle"    id="fSubtitle">お参りする故人を選択してください</p>
+
+      <div class="f-members" id="fMembers"></div>
+    </div>
+
+    <script type="module">
+      import { getPersonById, getDocs, getDoc, doc, db, where, tenantQuery, COLLECTIONS } from "./js/firebase.js";
+
+      const lang = sessionStorage.getItem('kiosk_lang') || 'ja';
+      const ja   = lang !== 'en';
+
+      document.getElementById('fnavBack').textContent = ja ? '◀ 戻る' : '◀ Back';
+      document.getElementById('fnavBack').addEventListener('click', () => {
+        window.location.href = 'index.html?restore=search';
+      });
+      document.getElementById('fnavEnd').textContent  = ja ? '参拝終了' : 'End Visit';
+      document.getElementById('fnavEnd').addEventListener('click', () => { window.location.href = 'index.html'; });
+      document.getElementById('fSubtitle').textContent = ja
+        ? 'お参りする故人を選択してください'
+        : 'Select a family member to view their memorial';
+
+      document.body.classList.toggle('lang-ja', ja);
+      document.body.classList.toggle('lang-en', !ja);
+      document.documentElement.lang = lang;
+
+      const params   = new URLSearchParams(window.location.search);
+      const personId = params.get('person');
+      const loader   = document.getElementById('loader');
+      const main     = document.getElementById('fMain');
+
+      function showError(msg) {
+        loader.classList.add('hidden');
+        document.body.insertAdjacentHTML('beforeend', `
+          <div class="p-error">
+            <p>${msg}</p>
+            <a href="index.html">${ja ? '← 検索に戻る' : '← Return to search'}</a>
+          </div>`);
+      }
+
+      if (!personId) {
+        showError(ja ? 'ご家族の情報が指定されていません。' : 'No family specified.');
+      } else {
+        (async () => {
+          try {
+            const root = await getPersonById(personId);
+            if (!root) { showError(ja ? '記録が見つかりませんでした。' : 'Memorial not found.'); return; }
+
+            // Collect all member IDs: root + related
+            const relatedIds = root.related_persons || [];
+            const allIds = [root.id, ...relatedIds];
+
+            // Fetch all members
+            const fetches = allIds.map((id) => getDoc(doc(db, COLLECTIONS.persons, id)));
+            const snaps   = await Promise.all(fetches);
+            const members = snaps.filter((s) => s.exists()).map((s) => ({ id: s.id, ...s.data() }));
+
+            // Family name: use shared last_name from root
+            const familyNameText = ja
+              ? `${root.last_name || ''}家`
+              : `${root.last_name || ''} Family`;
+            document.getElementById('fFamilyName').textContent = familyNameText;
+            document.title = `${familyNameText} — SmartSenior`;
+
+            // Render member buttons
+            const membersEl = document.getElementById('fMembers');
+            membersEl.innerHTML = members.map((m) => {
+              const name = ja
+                ? `${m.last_name || ''}　${m.first_name || ''}`.trim()
+                : `${m.first_name || ''} ${m.last_name || ''}`.trim();
+              const years = m.birth_date || m.death_date
+                ? `${(m.birth_date || '').slice(0,4) || '?'} – ${(m.death_date || '').slice(0,4) || '?'}`
+                : '';
+              return `
+                <button class="f-member-btn" data-id="${m.id}">
+                  <span class="f-member-name">${name}</span>
+                  ${years ? `<span class="f-member-years">${years}</span>` : ''}
+                </button>`;
+            }).join('');
+
+            membersEl.querySelectorAll('.f-member-btn').forEach((btn) => {
+              btn.addEventListener('click', () => {
+                window.location.href = `profile.html?person=${btn.dataset.id}&via=family`;
+              });
+            });
+
+            loader.classList.add('hidden');
+            main.classList.remove('hidden');
+          } catch (err) {
+            console.error('[family]', err);
+            showError(ja ? '読み込みに失敗しました。' : 'Something went wrong.');
+          }
+        })();
+      }
+    </script>
+  </body>
+</html>

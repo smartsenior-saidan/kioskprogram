@@ -1,0 +1,262 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Admin — SmartSenior</title>
+    <link rel="stylesheet" href="css/style.css" />
+    <link rel="stylesheet" href="css/admin.css" />
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/gh/davidshimjs/qrcodejs/qrcode.min.js" defer></script>
+  </head>
+  <body>
+    <div class="app-shell">
+
+      <!-- ══════════════ SIDEBAR ══════════════ -->
+      <aside class="sidebar" id="sidebar">
+        <div class="sidebar-brand">
+          <div class="brand-dot">S</div>
+          <span class="brand-name">SmartSenior</span>
+        </div>
+
+        <nav class="sidebar-nav">
+          <button class="nav-item active" data-section="dashboard">
+            <span class="nav-icon">
+              <svg viewBox="0 0 20 20" fill="currentColor"><path d="M3 4a1 1 0 011-1h4a1 1 0 011 1v4a1 1 0 01-1 1H4a1 1 0 01-1-1V4zm0 8a1 1 0 011-1h4a1 1 0 011 1v4a1 1 0 01-1 1H4a1 1 0 01-1-1v-4zm8-8a1 1 0 011-1h4a1 1 0 011 1v4a1 1 0 01-1 1h-4a1 1 0 01-1-1V4zm0 8a1 1 0 011-1h4a1 1 0 011 1v4a1 1 0 01-1 1h-4a1 1 0 01-1-1v-4z"/></svg>
+            </span>
+            <span data-i18n="nav.dashboard">Dashboard</span>
+          </button>
+          <button class="nav-item" data-section="profiles">
+            <span class="nav-icon">
+              <svg viewBox="0 0 20 20" fill="currentColor"><path d="M9 6a3 3 0 11-6 0 3 3 0 016 0zM17 6a3 3 0 11-6 0 3 3 0 016 0zM12.93 17c.046-.327.07-.66.07-1a6.97 6.97 0 00-1.5-4.33A5 5 0 0119 16v1h-6.07zM6 11a5 5 0 015 5v1H1v-1a5 5 0 015-5z"/></svg>
+            </span>
+            <span data-i18n="nav.profiles">Profiles</span>
+          </button>
+          <button class="nav-item" data-section="new-profile">
+            <span class="nav-icon">
+              <svg viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M10 3a1 1 0 011 1v5h5a1 1 0 110 2h-5v5a1 1 0 11-2 0v-5H4a1 1 0 110-2h5V4a1 1 0 011-1z" clip-rule="evenodd"/></svg>
+            </span>
+            <span data-i18n="nav.newProfile">New Profile</span>
+          </button>
+        </nav>
+
+        <div class="sidebar-footer">
+          <div class="sidebar-user">
+            <div class="sidebar-user-name" id="sidebarUser">—</div>
+            <div class="sidebar-user-role" id="sidebarRole">Admin</div>
+          </div>
+          <div class="tenant-pill" id="tenantBadge">—</div>
+          <button class="sign-out-btn" id="signOutBtn">
+            <svg viewBox="0 0 20 20" fill="currentColor" width="16" height="16"><path fill-rule="evenodd" d="M3 3a1 1 0 00-1 1v12a1 1 0 001 1h7a1 1 0 100-2H4V5h6a1 1 0 100-2H3zm11.293 4.293a1 1 0 011.414 0l3 3a1 1 0 010 1.414l-3 3a1 1 0 01-1.414-1.414L15.586 11H9a1 1 0 110-2h6.586l-1.293-1.293a1 1 0 010-1.414z" clip-rule="evenodd"/></svg>
+            <span data-i18n="signOut">Sign out</span>
+          </button>
+        </div>
+      </aside>
+
+      <!-- ══════════════ MAIN ══════════════ -->
+      <div class="main-wrap">
+
+        <header class="top-bar">
+          <div class="top-bar-left">
+            <button class="menu-toggle" id="menuToggle" aria-label="Toggle sidebar">
+              <svg viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M3 5a1 1 0 011-1h12a1 1 0 110 2H4a1 1 0 01-1-1zM3 10a1 1 0 011-1h12a1 1 0 110 2H4a1 1 0 01-1-1zM3 15a1 1 0 011-1h12a1 1 0 110 2H4a1 1 0 01-1-1z" clip-rule="evenodd"/></svg>
+            </button>
+            <h2 class="page-title" id="pageTitle">Dashboard</h2>
+          </div>
+          <div class="top-bar-right">
+            <div id="topStatus" class="top-status hidden"></div>
+            <div class="lang-switch" id="langSwitch">
+              <button type="button" data-lang="en">EN</button>
+              <button type="button" data-lang="ja">日本語</button>
+            </div>
+            <button class="btn" id="newProfileBtn" data-i18n="btn.newProfile">+ New Profile</button>
+          </div>
+        </header>
+
+        <main class="content">
+
+          <!-- ══ DASHBOARD ══ -->
+          <section id="sec-dashboard" class="section active">
+
+            <div class="stat-row">
+              <div class="stat-card gradient-blue">
+                <p class="stat-label" data-i18n="stat.totalProfiles">Total Profiles</p>
+                <p class="stat-value" id="statProfiles">—</p>
+                <p class="stat-sub" data-i18n="stat.totalProfilesSub">Deceased persons</p>
+              </div>
+              <div class="stat-card gradient-teal">
+                <p class="stat-label" data-i18n="stat.media">Media Files</p>
+                <p class="stat-value" id="statMedia">—</p>
+                <p class="stat-sub" data-i18n="stat.mediaSub">Photos &amp; videos</p>
+              </div>
+              <div class="stat-card gradient-amber">
+                <p class="stat-label" data-i18n="stat.searches">Searches</p>
+                <p class="stat-value" id="statSearches">—</p>
+                <p class="stat-sub" data-i18n="stat.allTime">All time</p>
+              </div>
+              <div class="stat-card gradient-rose">
+                <p class="stat-label" data-i18n="stat.views">Profile Views</p>
+                <p class="stat-value" id="statViews">—</p>
+                <p class="stat-sub" data-i18n="stat.allTime">All time</p>
+              </div>
+            </div>
+
+            <div class="dash-grid">
+              <div class="card">
+                <h3 class="card-title" data-i18n="card.eventBreakdown">Event Breakdown</h3>
+                <div class="chart-wrap">
+                  <canvas id="eventChart"></canvas>
+                </div>
+              </div>
+              <div class="card">
+                <h3 class="card-title" data-i18n="card.recentActivity">Recent Activity</h3>
+                <ul class="activity-list" id="activityList">
+                  <li class="activity-empty"><div class="spinner"></div></li>
+                </ul>
+              </div>
+            </div>
+
+            <div class="card" style="margin-top:24px">
+              <div class="card-row">
+                <h3 class="card-title" data-i18n="card.recentProfiles">Recent Profiles</h3>
+                <button class="btn-link" data-section="profiles" data-i18n="link.viewAll">View all →</button>
+              </div>
+              <div id="recentProfiles"><div class="spinner"></div></div>
+            </div>
+
+          </section>
+
+          <!-- ══ ALL PROFILES ══ -->
+          <section id="sec-profiles" class="section">
+            <div class="card">
+              <div class="card-row" style="margin-bottom:20px">
+                <h3 class="card-title" data-i18n="card.allProfiles">All Profiles</h3>
+                <div class="card-row-actions">
+                  <input id="profileSearch" type="search" placeholder="Filter by name…" data-i18n-ph="ph.filterName" aria-label="Filter profiles" />
+                  <button class="btn-secondary" id="refreshBtn" data-i18n="btn.refresh">↺ Refresh</button>
+                  <button class="btn" id="addProfileBtn" data-i18n="btn.newProfile">+ New Profile</button>
+                </div>
+              </div>
+              <div id="profileTable"><div class="spinner"></div></div>
+            </div>
+          </section>
+
+          <!-- ══ NEW / EDIT PROFILE ══ -->
+          <section id="sec-new-profile" class="section">
+            <div class="form-layout">
+
+              <div class="card">
+                <h3 class="card-title" id="formTitle">New Profile</h3>
+                <div id="formStatus" class="form-status hidden"></div>
+
+                <form id="profileForm">
+                  <div class="form-row">
+                    <div class="field">
+                      <label for="firstName" data-i18n="form.firstName">First name *</label>
+                      <input id="firstName" type="text" required />
+                    </div>
+                    <div class="field">
+                      <label for="lastName" data-i18n="form.lastName">Last name *</label>
+                      <input id="lastName" type="text" required />
+                    </div>
+                  </div>
+
+                  <div class="field">
+                    <label for="familyName" data-i18n="form.familyName">Family / maiden name</label>
+                    <input id="familyName" type="text" placeholder="Helps guests search under an additional surname" data-i18n-ph="ph.familyName" />
+                  </div>
+
+                  <div class="form-row">
+                    <div class="field">
+                      <label for="birthDate" data-i18n="form.birthDate">Date of birth</label>
+                      <input id="birthDate" type="date" />
+                    </div>
+                    <div class="field">
+                      <label for="deathDate" data-i18n="form.deathDate">Date of passing</label>
+                      <input id="deathDate" type="date" />
+                    </div>
+                  </div>
+
+                  <div class="field">
+                    <label for="plot" data-i18n="form.plot">Plot / location</label>
+                    <input id="plot" type="text" placeholder="e.g. Section C, Row 12" data-i18n-ph="ph.plot" />
+                  </div>
+
+                  <div class="field">
+                    <label for="biography" data-i18n="form.biography">Biography</label>
+                    <textarea id="biography" placeholder="Share their life story, memories, and legacy…" data-i18n-ph="ph.biography"></textarea>
+                  </div>
+
+                  <div class="field field-presentation">
+                    <label for="presentationUrl" data-i18n="form.presentationUrl">Presentation link (optional)</label>
+                    <input id="presentationUrl" type="url" inputmode="url" placeholder="https://…  link to a premade presentation" data-i18n-ph="ph.presentationUrl" />
+                    <p class="field-hint" data-i18n="hint.presentationUrl">If set, the kiosk opens this presentation instead of the photos &amp; videos below.</p>
+                  </div>
+
+                  <div class="field">
+                    <label>Family members</label>
+                    <p class="field-hint">Linked profiles will appear on the kiosk so guests can navigate between family members.</p>
+                    <div class="family-picker">
+                      <div class="family-search-row">
+                        <input id="familySearch" type="search" placeholder="Search by name…" autocomplete="off" />
+                      </div>
+                      <ul class="family-suggestions hidden" id="familySuggestions"></ul>
+                      <ul class="family-selected" id="familySelected"></ul>
+                    </div>
+                  </div>
+
+                  <div class="field">
+                    <label data-i18n="form.media">Photos &amp; videos</label>
+                    <div class="dropzone" id="dropzone">
+                      <svg class="dropzone-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path stroke-linecap="round" stroke-linejoin="round" d="M3 16.5v2.25A2.25 2.25 0 005.25 21h13.5A2.25 2.25 0 0021 18.75V16.5m-13.5-9L12 3m0 0l4.5 4.5M12 3v13.5"/></svg>
+                      <p data-i18n-html="dropzone.main"><strong>Tap to choose</strong> or drag files here</p>
+                      <p class="field-hint" data-i18n="dropzone.hint">JPG, PNG, MP4, WebM</p>
+                      <input id="fileInput" type="file" accept="image/*,video/*" multiple />
+                    </div>
+                    <div class="upload-progress hidden" id="uploadProgress">
+                      <div class="progress-bar" id="progressBar"></div>
+                    </div>
+                    <div class="media-preview" id="mediaPreview"></div>
+                  </div>
+
+                  <div class="form-actions">
+                    <button id="saveBtn" type="submit" data-i18n="btn.saveProfile">Save profile</button>
+                    <button id="resetBtn" type="button" class="btn-secondary" data-i18n="btn.clear">Clear</button>
+                  </div>
+                </form>
+              </div>
+
+              <!-- NFC / QR card — revealed after save -->
+              <div class="card hidden" id="linkBox">
+                <h3 class="card-title" data-i18n="card.linkNfc">Link NFC / QR</h3>
+                <p class="field-hint" data-i18n="hint.linkNfc">Program an NFC tag or print the QR code. Scans are logged automatically.</p>
+
+                <div class="field" style="margin-top:16px">
+                  <label data-i18n="label.profileUrl">Profile URL</label>
+                  <div class="url-row">
+                    <input id="linkUrl" type="text" class="url-input" readonly />
+                    <button id="copyLinkBtn" type="button" class="btn-secondary" data-i18n="btn.copy">Copy</button>
+                  </div>
+                </div>
+
+                <div class="field">
+                  <label data-i18n="label.nfcUrl">NFC tag URL</label>
+                  <input id="nfcUrl" type="text" class="url-input" readonly />
+                </div>
+
+                <div id="qrcode" class="qr-wrap"></div>
+              </div>
+
+            </div>
+          </section>
+
+        </main>
+      </div>
+    </div>
+
+    <script type="module">
+      import { initAdminPortal } from "./js/admin.js";
+      initAdminPortal();
+    </script>
+  </body>
+</html>
