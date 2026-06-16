@@ -8,15 +8,16 @@ A multi-tenant memorial kiosk and admin system built with vanilla JS + Firebase,
 
 | Project | URL | Who uses it |
 |---|---|---|
-| Kiosk | `smartsenior-kiosk.pages.dev?site=<tenant-id>` | Guests at the cemetery |
+| Kiosk | `kioskprogram.pages.dev?site=<tenant-id>` | Guests at the cemetery |
 | Admin | `smartsenior-admin.pages.dev` | Staff / managers |
 
-### Kiosk per tenant
-Each physical kiosk device just loads its own URL with the `?site=` parameter:
-```
-Cemetery A  →  smartsenior-kiosk.pages.dev?site=memorial-1
-Cemetery B  →  smartsenior-kiosk.pages.dev?site=memorial-2
-```
+### Active tenants
+
+| Tenant | Kiosk URL |
+|---|---|
+| test-hall | `kioskprogram.pages.dev?site=test-hall` |
+| memorial-1 | `kioskprogram.pages.dev?site=memorial-1` |
+
 Same deployment, different data. No new project needed per tenant.
 
 ---
