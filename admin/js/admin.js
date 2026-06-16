@@ -980,6 +980,7 @@ export function initAdminPortal() {
   const dropzoneCover = document.getElementById("dropzoneCover");
   const fileInputCover = document.getElementById("fileInputCover");
   if (dropzoneCover && fileInputCover) {
+    fileInputCover.addEventListener("click", (e) => e.stopPropagation());
     dropzoneCover.addEventListener("click", () => fileInputCover.click());
     fileInputCover.addEventListener("change", (e) => {
       if (e.target.files[0]) stageCover(e.target.files[0]);
@@ -1001,6 +1002,7 @@ export function initAdminPortal() {
   const dropzone  = document.getElementById("dropzone");
   const fileInput = document.getElementById("fileInput");
   if (dropzone && fileInput) {
+    fileInput.addEventListener("click", (e) => e.stopPropagation());
     dropzone.addEventListener("click", () => fileInput.click());
     fileInput.addEventListener("change", (e) => { stageFiles(e.target.files); fileInput.value = ""; });
     ["dragenter", "dragover"].forEach((ev) =>
