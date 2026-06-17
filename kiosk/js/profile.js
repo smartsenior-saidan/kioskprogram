@@ -262,6 +262,25 @@ function renderPerson(person, media) {
   // Photos or initials placeholder
   if (photos.length) {
     initSlideshow(photos.map((p) => p.storage_url));
+
+    // Tap photo to open fullscreen lightbox
+    const photoFrame = document.getElementById('pPhoto');
+    const lightbox   = document.getElementById('pLightbox');
+    const lbImg      = document.getElementById('pLightboxImg');
+    const lbClose    = document.getElementById('pLightboxClose');
+    if (photoFrame && lightbox) {
+      photoFrame.addEventListener('click', () => {
+        const active = document.querySelector('.p-slide.active');
+        if (!active?.src) return;
+        lbImg.src = active.src;
+        lightbox.classList.remove('hidden');
+      });
+      lbClose?.addEventListener('click', (e) => {
+        e.stopPropagation();
+        lightbox.classList.add('hidden');
+      });
+      lightbox.addEventListener('click', () => lightbox.classList.add('hidden'));
+    }
   } else {
     show('pNoPhoto');
     const initials = ((person.last_name || '').charAt(0) + (person.first_name || '').charAt(0)).toUpperCase() || '✦';

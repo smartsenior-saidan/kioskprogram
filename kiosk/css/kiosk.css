@@ -304,8 +304,8 @@ html.kiosk body {
   overflow-y: auto;
   -ms-overflow-style: none;
   scrollbar-width: none;
-  /* leave room for the fixed keyboard at the bottom */
-  max-height: calc(100vh - var(--topbar-h, 125px) - var(--input-row-h, 80px) - 280px);
+  /* --kb-h is measured dynamically in JS; fallback 300px covers Surface Pro */
+  max-height: calc(100vh - var(--topbar-h, 125px) - var(--input-row-h, 80px) - var(--kb-h, 300px));
 }
 
 .search-results-panel.panel-open {
@@ -673,7 +673,7 @@ html.kiosk body {
   align-items: center;
   justify-content: center;
   gap: clamp(24px, 5vw, 80px);
-  padding: 100px 70px 140px;
+  padding: clamp(80px, 9vh, 100px) clamp(40px, 5vw, 70px) clamp(110px, 13vh, 140px);
   opacity: 0;
   animation: m-fadein 0.9s ease 0.1s forwards;
 }
@@ -769,7 +769,7 @@ html.kiosk body {
 
 .m-photo {
   position: relative;
-  width: clamp(320px, 36vw, 540px);
+  width: clamp(200px, min(34vw, 40vh), 500px);
   aspect-ratio: 1 / 1;
   background: #eeece8;
   border: 8px solid #fff;
@@ -987,7 +987,7 @@ html.kiosk body {
 
 /* ── English fallback (horizontal) ── */
 
-.lang-en .m-stage { flex-direction: column; gap: 24px; padding: 120px 60px 160px; }
+.lang-en .m-stage { flex-direction: column; gap: clamp(8px, 1.5vh, 24px); padding: clamp(80px, 9vh, 120px) 60px clamp(100px, 12vh, 160px); }
 .lang-en .m-side  { flex-direction: column; align-items: center; gap: 8px; padding: 0; }
 .lang-en .m-name  { text-align: center; letter-spacing: 0; }
 .lang-en .m-info  { gap: 8px; }
@@ -1172,3 +1172,46 @@ html.kiosk body {
   font-size: clamp(0.75rem, 1.2vw, 1rem);
   color: var(--color-text-muted);
 }
+
+/* ── Photo lightbox (tap photo to view full-screen) ── */
+
+.m-lightbox {
+  position: fixed;
+  inset: 0;
+  z-index: 200;
+  background: rgba(0, 0, 0, 0.92);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+}
+
+.m-lightbox img {
+  max-width: 96vw;
+  max-height: 96vh;
+  object-fit: contain;
+  border-radius: 4px;
+  box-shadow: 0 4px 40px rgba(0, 0, 0, 0.5);
+  pointer-events: none;
+}
+
+.m-lightbox-close {
+  position: absolute;
+  top: 24px;
+  right: 24px;
+  width: 60px;
+  height: 60px;
+  background: rgba(255, 255, 255, 0.15);
+  border: 1.5px solid rgba(255, 255, 255, 0.35);
+  border-radius: 50%;
+  color: #fff;
+  font-size: 1.4rem;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: background 0.15s ease;
+  pointer-events: auto;
+}
+
+.m-lightbox-close:hover { background: rgba(255, 255, 255, 0.25); }

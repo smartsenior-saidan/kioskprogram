@@ -5,7 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover" />
     <title>電子墓誌 — SmartSenior</title>
     <link rel="stylesheet" href="css/style.css?v=2" />
-    <link rel="stylesheet" href="css/kiosk.css?v=5" />
+    <link rel="stylesheet" href="css/kiosk.css?v=6" />
     <!-- Pins this kiosk to its memorial site (tenant). Runs before modules. -->
     <script src="js/config.js"></script>
   </head>
@@ -87,6 +87,12 @@
       <div class="m-video-wrap hidden" id="pVideoWrap">
         <video class="m-video" id="pVideo" controls playsinline preload="metadata"></video>
       </div>
+    </div>
+
+    <!-- ── Photo lightbox ── -->
+    <div class="m-lightbox hidden" id="pLightbox">
+      <button class="m-lightbox-close" id="pLightboxClose">✕</button>
+      <img id="pLightboxImg" alt="" />
     </div>
 
     <!-- ── Biography overlay ── -->

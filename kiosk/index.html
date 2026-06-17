@@ -8,7 +8,7 @@
     />
     <title>SmartSenior — 電子墓誌検索</title>
     <link rel="stylesheet" href="css/style.css?v=2" />
-    <link rel="stylesheet" href="css/kiosk.css?v=5" />
+    <link rel="stylesheet" href="css/kiosk.css?v=6" />
     <!-- Pins this kiosk to its memorial site (tenant). Runs before modules. -->
     <script src="js/config.js"></script>
   </head>
@@ -307,8 +307,10 @@
       function measureLayout() {
         const topH   = document.querySelector('.search-topbar').offsetHeight;
         const inputH = document.querySelector('.search-input-row').offsetHeight;
+        const kbH    = keyboardArea.offsetHeight + 20; // +16px bottom gap + 4px buffer
         searchScreen2.style.setProperty('--topbar-h',    topH   + 'px');
         searchScreen2.style.setProperty('--input-row-h', inputH + 'px');
+        searchScreen2.style.setProperty('--kb-h',        kbH    + 'px');
       }
 
       // ── Keyboard: always visible on search screen ─────────────────────
@@ -333,7 +335,8 @@
       function showSearch() {
         homeScreen.classList.add('hidden');
         searchScreen.classList.remove('hidden');
-        requestAnimationFrame(() => { measureLayout(); openKeyboard(); });
+        // openKeyboard first so the keyboard is rendered before we measure its height
+        requestAnimationFrame(() => { openKeyboard(); measureLayout(); });
       }
       function showHome() {
         closeKeyboard();
@@ -355,6 +358,11 @@
       }
       document.getElementById('langSwitcher').addEventListener('click', handleLangClick);
       document.getElementById('homeLangSwitcher').addEventListener('click', handleLangClick);
+
+      // Re-measure on resize (handles Surface Pro zoom / orientation changes)
+      window.addEventListener('resize', () => {
+        if (!searchScreen.classList.contains('hidden')) measureLayout();
+      });
 
       // ── Boot ──────────────────────────────────────────────────────────
       applyLang();
