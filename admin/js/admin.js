@@ -750,7 +750,9 @@ async function deleteProfile(person) {
 // ── File staging / upload ────────────────────────────────────────────────────
 
 function classifyFile(file) {
-  return file.type.startsWith("video/") ? "video" : "photo";
+  if (file.type.startsWith("video/")) return "video";
+  if (file.type.startsWith("audio/")) return "audio";
+  return "photo";
 }
 
 function stageCover(file) {
@@ -812,6 +814,8 @@ function renderPreviews() {
 
     const mediaEl = item.file_type === "video"
       ? Object.assign(document.createElement("video"), { src: item.storage_url, muted: true })
+      : item.file_type === "audio"
+      ? Object.assign(document.createElement("audio"), { src: item.storage_url, controls: true })
       : Object.assign(document.createElement("img"),  { src: item.storage_url, alt: "Gallery" });
 
     const badge  = Object.assign(document.createElement("span"), { className: "badge", textContent: item.file_type });
@@ -834,7 +838,9 @@ function renderPreviews() {
     const mediaEl =
       item.type === "video"
         ? Object.assign(document.createElement("video"), { src: item.previewUrl, muted: true })
-        : Object.assign(document.createElement("img"),  { src: item.previewUrl, alt: "Preview" });
+        : item.type === "audio"
+        ? Object.assign(document.createElement("audio"), { src: item.previewUrl, controls: true })
+        : Object.assign(document.createElement("img"),   { src: item.previewUrl, alt: "Preview" });
 
     const badge  = Object.assign(document.createElement("span"), { className: "badge", textContent: item.type });
     const remove = Object.assign(document.createElement("button"), { className: "remove", type: "button", textContent: "✕" });
