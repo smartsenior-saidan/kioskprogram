@@ -138,6 +138,19 @@ function initSlideshow(photoUrls) {
       });
     }
     restartTimer();
+
+    // Touch swipe on the photo frame
+    const photo = document.getElementById('pPhoto');
+    if (photo) {
+      let _tx = 0;
+      photo.addEventListener('touchstart', (e) => { _tx = e.touches[0].clientX; }, { passive: true });
+      photo.addEventListener('touchend', (e) => {
+        const dx = e.changedTouches[0].clientX - _tx;
+        if (Math.abs(dx) < 30) return;
+        slideTo(dx < 0 ? _idx + 1 : _idx - 1);
+        restartTimer();
+      }, { passive: true });
+    }
   }
 }
 
@@ -202,8 +215,9 @@ function renderEmbed(person) {
 function renderPerson(person, media) {
   const lang   = sessionStorage.getItem('kiosk_lang') || 'ja';
   const ja     = lang !== 'en';
-  const photos = media.filter((m) => m.file_type === 'photo' && m.storage_url);
-  const videos = media.filter((m) => m.file_type === 'video' && m.storage_url);
+  const photos  = media.filter((m) => m.file_type === 'photo' && m.storage_url);
+  const videos  = media.filter((m) => m.file_type === 'video' && m.storage_url);
+  const audios  = media.filter((m) => m.file_type === 'audio' && m.storage_url);
 
   document.body.classList.toggle('lang-ja', ja);
   document.body.classList.toggle('lang-en', !ja);
@@ -252,6 +266,35 @@ function renderPerson(person, media) {
     show('pNoPhoto');
     const initials = ((person.last_name || '').charAt(0) + (person.first_name || '').charAt(0)).toUpperCase() || '✦';
     set('pInitials', initials);
+  }
+
+  // Memorial audio
+  if (audios.length) {
+    const audio   = document.getElementById('pAudio');
+    const btn     = document.getElementById('pAudioBtn');
+    const icon    = document.getElementById('pAudioIcon');
+    const label   = document.getElementById('pAudioLabel');
+    if (audio && btn) {
+      audio.src = audios[0].storage_url;
+      btn.addEventListener('click', () => {
+        if (audio.paused) {
+          audio.play();
+          icon.textContent  = '⏸';
+          label.textContent = ja ? '一時停止' : 'Pause';
+        } else {
+          audio.pause();
+          icon.textContent  = '▶';
+          label.textContent = ja ? '音楽を再生' : 'Play Music';
+        }
+      });
+      audio.addEventListener('ended', () => {
+        icon.textContent  = '▶';
+        label.textContent = ja ? '音楽を再生' : 'Play Music';
+      });
+      if (label) label.textContent = ja ? '音楽を再生' : 'Play Music';
+      show('pAudioWrap');
+      show('pBottom');
+    }
   }
 
   // Memorial video

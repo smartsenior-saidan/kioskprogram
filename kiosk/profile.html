@@ -5,7 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover" />
     <title>電子墓誌 — SmartSenior</title>
     <link rel="stylesheet" href="css/style.css?v=2" />
-    <link rel="stylesheet" href="css/kiosk.css?v=3" />
+    <link rel="stylesheet" href="css/kiosk.css?v=4" />
     <!-- Pins this kiosk to its memorial site (tenant). Runs before modules. -->
     <script src="js/config.js"></script>
   </head>
@@ -74,9 +74,16 @@
       <div class="m-family-list" id="pFamilyList"></div>
     </div>
 
-    <!-- ── Bottom bar: memorial video + biography toggle ── -->
+    <!-- ── Bottom bar: audio player + memorial video + biography toggle ── -->
     <div class="m-bottom hidden" id="pBottom">
       <button class="m-link hidden" id="pBioToggle">ご略歴を読む</button>
+      <div class="m-audio-wrap hidden" id="pAudioWrap">
+        <button class="m-audio-btn" id="pAudioBtn" aria-label="Play music">
+          <span class="m-audio-icon" id="pAudioIcon">▶</span>
+          <span class="m-audio-label" id="pAudioLabel">音楽を再生</span>
+        </button>
+        <audio id="pAudio" preload="metadata"></audio>
+      </div>
       <div class="m-video-wrap hidden" id="pVideoWrap">
         <video class="m-video" id="pVideo" controls playsinline preload="metadata"></video>
       </div>

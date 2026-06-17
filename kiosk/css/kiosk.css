@@ -861,6 +861,41 @@ html.kiosk body {
 
 .m-bottom > * { pointer-events: auto; }
 
+.m-audio-wrap {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.m-audio-btn {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  padding: 18px 40px;
+  background: #fff;
+  border: 1.5px solid var(--color-border);
+  border-radius: 60px;
+  cursor: pointer;
+  box-shadow: 0 2px 12px rgba(0,0,0,0.10);
+  transition: background 0.12s ease, box-shadow 0.12s ease;
+}
+
+.m-audio-btn:hover  { background: rgba(0,0,0,0.03); box-shadow: 0 4px 20px rgba(0,0,0,0.13); }
+.m-audio-btn:active { background: rgba(0,0,0,0.07); transform: translateY(1px); }
+
+.m-audio-icon {
+  font-size: 1.4rem;
+  line-height: 1;
+  color: var(--color-accent);
+}
+
+.m-audio-label {
+  font-size: 1.15rem;
+  font-weight: 600;
+  color: var(--color-text);
+  letter-spacing: 0.02em;
+}
+
 .m-video-wrap {
   width: clamp(320px, 44vw, 600px);
 }
