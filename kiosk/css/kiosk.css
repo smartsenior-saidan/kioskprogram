@@ -18,6 +18,17 @@ html.kiosk body {
   cursor: default;
 }
 
+/* ── Background pre-load gate ───────────────────────────────────────────── */
+/* Hide all page content while the tenant background image is being fetched, */
+/* then fade in once it's painted (or after the 2.5s timeout fires).         */
+
+body {
+  transition: opacity 0.45s ease;
+}
+body.bg-loading {
+  opacity: 0;
+}
+
 .kiosk-scroll {
   overflow-y: auto;
   -ms-overflow-style: none;

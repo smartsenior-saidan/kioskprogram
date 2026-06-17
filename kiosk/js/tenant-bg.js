@@ -1,6 +1,6 @@
 // tenant-bg.js — loads a per-tenant background image from Firebase Storage.
 //
-// Upload your background to:  tenants/{tenantId}/background.jpg  (or .png / .webp)
+// Upload your background to:  {tenantId}/background.jpg  (or .png / .webp)
 // Call applyTenantBackground() on any page that should show it.
 
 import {
@@ -11,10 +11,9 @@ import {
 
 const EXTENSIONS = ["jpg", "jpeg", "png", "webp"];
 
-/**
- * Try each extension in order and return the first download URL that resolves,
- * or null if the tenant has no background uploaded.
- */
+// Maximum ms to wait before showing content regardless of background load status
+const BG_TIMEOUT_MS = 2500;
+
 async function findBackgroundURL(tenantId) {
   for (const ext of EXTENSIONS) {
     try {
@@ -28,23 +27,37 @@ async function findBackgroundURL(tenantId) {
   return null;
 }
 
-/**
- * Fetch the tenant's background image and apply it to <body>.
- * Adds class `has-tenant-bg` when an image is found so CSS can style over it.
- * Safe to call on any page — does nothing if no image is uploaded.
- */
 export async function applyTenantBackground() {
   const tenantId = window.__ENV__?.TENANT_ID;
-  if (!tenantId) return;
+
+  // Mark body as loading — CSS hides content until this is removed
+  document.body.classList.add("bg-loading");
+
+  // Safety valve: never block the page for more than BG_TIMEOUT_MS
+  const timeout = setTimeout(() => {
+    document.body.classList.remove("bg-loading");
+  }, BG_TIMEOUT_MS);
 
   try {
-    const url = await findBackgroundURL(tenantId);
-    if (!url) return;
+    if (!tenantId) return;
 
-    document.body.style.setProperty("--tenant-bg-url", `url("${url}")`);
-    document.body.classList.add("has-tenant-bg");
+    const url = await findBackgroundURL(tenantId);
+    if (url) {
+      // Pre-load the image so it's painted before we reveal the page
+      await new Promise((resolve) => {
+        const img = new Image();
+        img.onload = resolve;
+        img.onerror = resolve; // still reveal on error
+        img.src = url;
+      });
+
+      document.body.style.setProperty("--tenant-bg-url", `url("${url}")`);
+      document.body.classList.add("has-tenant-bg");
+    }
   } catch (err) {
-    // Non-critical — kiosk works fine without a background
     console.warn("[tenant-bg] failed to load background:", err);
+  } finally {
+    clearTimeout(timeout);
+    document.body.classList.remove("bg-loading");
   }
 }
