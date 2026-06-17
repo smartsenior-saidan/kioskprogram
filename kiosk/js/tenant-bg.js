@@ -18,7 +18,7 @@ const EXTENSIONS = ["jpg", "jpeg", "png", "webp"];
 async function findBackgroundURL(tenantId) {
   for (const ext of EXTENSIONS) {
     try {
-      const path = `tenants/${tenantId}/background.${ext}`;
+      const path = `${tenantId}/background.${ext}`;
       const url = await getDownloadURL(storageRef(storage, path));
       return url;
     } catch (_) {
