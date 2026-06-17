@@ -441,14 +441,15 @@ html.kiosk body {
 
 .keyboard-area {
   /* --results-w is set by JS when the results panel opens (0 when closed) */
-  --_avail: calc(100vw - var(--results-w, 0px) - 32px);
-  --_w:     min(920px, var(--_avail));
-  --_left:  max(16px, calc((100vw - var(--results-w, 0px) - var(--_w)) / 2));
+  --_avail: calc(100vw - var(--results-w, 0px) - 24px);
+  --_w:     min(1060px, var(--_avail));
+  --_left:  max(12px, calc((100vw - var(--results-w, 0px) - var(--_w)) / 2));
 
   position: fixed;
   left: var(--_left);
   width: var(--_w);
   top: calc(var(--topbar-h, 125px) + var(--input-row-h, 110px) + 12px);
+  bottom: 16px;
   z-index: 60;
   background: #c7c0b4;
   border: 1px solid #b8b0a4;
@@ -472,12 +473,15 @@ html.kiosk body {
 
 
 .kb-body {
+  flex: 1;
+  min-height: 0;
   display: flex;
   gap: 8px;
 }
 
 .kb-main {
   flex: 1;
+  min-height: 0;
   display: grid;
   /* column/row counts set by JS via inline style per language */
   gap: 8px;
@@ -488,6 +492,7 @@ html.kiosk body {
   flex-direction: column;
   gap: 8px;
   width: 100px;
+  flex-shrink: 0;
 }
 
 .kb-key {
@@ -495,9 +500,9 @@ html.kiosk body {
   flex-direction: column;
   align-items: center;
   justify-content: center;
-  height: 68px;
+  height: auto;
+  min-height: 48px;
   min-width: unset;
-  min-height: unset;
   padding: 0;
   font-size: 1.65rem;
   font-weight: 400;
@@ -531,6 +536,8 @@ html.kiosk body {
   margin-top: 2px;
   line-height: 1;
 }
+
+.kb-special .kb-key { flex: 1; }
 
 /* Special key variants — gray like iOS */
 .kb-key.action {
@@ -1061,13 +1068,13 @@ html.kiosk body {
 /* ── Family selector page ── */
 
 .family-page {
-  background: #5c1a00;
-  background-image: radial-gradient(ellipse at 50% 30%, #7a2800 0%, #3a0e00 100%);
+  background: #faf9f6;
   min-height: 100vh;
   display: flex;
   align-items: center;
   justify-content: center;
   overflow: hidden;
+  position: relative;
 }
 
 .f-loader {
@@ -1078,7 +1085,7 @@ html.kiosk body {
   align-items: center;
   justify-content: center;
   gap: 16px;
-  color: #c9a84c;
+  color: var(--color-text-muted);
 }
 
 .f-stage {
@@ -1094,17 +1101,15 @@ html.kiosk body {
 
 .f-family-name {
   font-size: clamp(2rem, 5vw, 4rem);
-  color: #c9a84c;
-  font-weight: 400;
-  letter-spacing: 0.15em;
-  text-shadow: 0 2px 12px rgba(0,0,0,0.4);
+  color: var(--color-text);
+  font-weight: 600;
+  letter-spacing: 0.04em;
 }
 
 .f-subtitle {
-  font-size: clamp(0.9rem, 1.8vw, 1.3rem);
-  color: #e8d5a0;
-  letter-spacing: 0.08em;
-  opacity: 0.85;
+  font-size: clamp(0.9rem, 1.8vw, 1.2rem);
+  color: var(--color-text-muted);
+  letter-spacing: 0.03em;
 }
 
 .f-members {
@@ -1116,10 +1121,10 @@ html.kiosk body {
 }
 
 .f-member-btn {
-  background: rgba(255,255,255,0.12);
-  border: 1.5px solid rgba(201,168,76,0.5);
-  border-radius: 12px;
-  color: #f5e6c0;
+  background: #fff;
+  border: 1.5px solid var(--color-border);
+  border-radius: 16px;
+  color: var(--color-text);
   padding: clamp(16px, 2.5vw, 28px) clamp(24px, 4vw, 48px);
   cursor: pointer;
   display: flex;
@@ -1127,24 +1132,23 @@ html.kiosk body {
   align-items: center;
   gap: 8px;
   min-width: clamp(160px, 25vw, 260px);
-  transition: background 0.2s, border-color 0.2s;
-  backdrop-filter: blur(4px);
+  box-shadow: 0 2px 8px rgba(0,0,0,0.07);
+  transition: border-color 0.15s ease, box-shadow 0.15s ease;
 }
 
 .f-member-btn:hover,
 .f-member-btn:active {
-  background: rgba(201,168,76,0.25);
-  border-color: #c9a84c;
+  border-color: var(--color-accent);
+  box-shadow: 0 4px 16px rgba(0, 113, 227, 0.14);
 }
 
 .f-member-name {
   font-size: clamp(1.1rem, 2.5vw, 1.8rem);
-  font-weight: 500;
-  letter-spacing: 0.08em;
+  font-weight: 600;
+  letter-spacing: 0.03em;
 }
 
 .f-member-years {
   font-size: clamp(0.75rem, 1.2vw, 1rem);
-  color: #c9a84c;
-  opacity: 0.85;
+  color: var(--color-text-muted);
 }
