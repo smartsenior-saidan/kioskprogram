@@ -745,6 +745,7 @@ body.has-tenant-bg .f-member-years {
 
 /* Side columns (vertical Japanese text) */
 .m-side {
+  flex: 1;
   display: flex;
   align-items: flex-start;
   justify-content: center;
