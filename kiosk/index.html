@@ -18,7 +18,7 @@
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
     <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Shippori+Mincho:wght@400;500;600;700;800&display=swap" />
-    <link rel="stylesheet" href="css/kiosk.css?v=15" />
+    <link rel="stylesheet" href="css/kiosk.css?v=16" />
     <!-- Pins this kiosk to its memorial site (tenant). Runs before modules. -->
     <script src="js/config.js"></script>
   </head>
@@ -39,6 +39,7 @@
       </div>
 
       <div class="home-greeting">
+        <p class="home-tenant-name hidden" id="homeTenantName"></p>
         <p class="home-greeting-main" data-i18n="greetingMain"></p>
         <p class="home-greeting-sub"  data-i18n="greetingSub"></p>
       </div>
@@ -108,7 +109,6 @@
     <script type="module">
       import { initSearchScreen } from "./js/search.js";
       import { applyTenantBackground } from "./js/tenant-bg.js";
-      applyTenantBackground();
 
       // ── Translations ──────────────────────────────────────────────────
       const STRINGS = {
@@ -372,6 +372,31 @@
       // ── Boot ──────────────────────────────────────────────────────────
       applyLang();
       initSearchScreen();
+
+      // Apply tenant theme; use returned config for name / greeting overrides.
+      // Page is invisible (bg-loading opacity:0) until this resolves.
+      applyTenantBackground().then((config) => {
+        if (!config) return;
+
+        // Show temple/site name above greeting
+        const nameEl = document.getElementById('homeTenantName');
+        if (nameEl && config.name) {
+          nameEl.textContent = config.name;
+          nameEl.classList.remove('hidden');
+        }
+
+        // Override greeting copy if the tenant has custom text
+        const mainEl = document.querySelector('[data-i18n="greetingMain"]');
+        const subEl  = document.querySelector('[data-i18n="greetingSub"]');
+        if (mainEl) {
+          if (currentLang === 'ja' && config.greeting_ja) mainEl.textContent = config.greeting_ja;
+          if (currentLang === 'en' && config.greeting_en) mainEl.textContent = config.greeting_en;
+        }
+        if (subEl) {
+          if (currentLang === 'ja' && config.greeting_sub_ja) subEl.textContent = config.greeting_sub_ja;
+          if (currentLang === 'en' && config.greeting_sub_en) subEl.textContent = config.greeting_sub_en;
+        }
+      });
 
       // Restore search screen if coming back from family/profile page
       if (new URLSearchParams(window.location.search).get('restore') === 'search') {

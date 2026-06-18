@@ -119,6 +119,17 @@ export function withTenant(data) {
   };
 }
 
+/** Read this tenant's configuration document. Returns {} if not yet created. */
+export async function getTenantConfig() {
+  try {
+    const snap = await getDoc(doc(db, COLLECTIONS.tenants, TENANT_ID));
+    return snap.exists() ? snap.data() : {};
+  } catch (err) {
+    console.warn("[firebase] failed to load tenant config:", err);
+    return {};
+  }
+}
+
 /** Read a single person document, verifying it belongs to the active tenant. */
 export async function getPersonById(personId) {
   const snap = await getDoc(doc(db, COLLECTIONS.persons, personId));

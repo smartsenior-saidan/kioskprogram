@@ -53,6 +53,12 @@ service cloud.firestore {
       }
     }
 
+    // ── Tenant configuration ────────────────────────────────────────────────
+    match /tenants/{tenantId} {
+      allow read:  if true;   // kiosk reads accent_color, bgm_path, name
+      allow write: if false;  // managed via Firebase console / admin SDK only
+    }
+
     // ── Kiosk devices ───────────────────────────────────────────────────────
     match /kiosk_devices/{id} {
       allow read:  if true;

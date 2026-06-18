@@ -122,6 +122,14 @@ body.bg-loading {
   gap: clamp(10px, 1.8vh, 20px);
 }
 
+.home-tenant-name {
+  font-size: clamp(1rem, 2vw, 1.4rem);
+  font-weight: 500;
+  color: var(--color-accent);
+  letter-spacing: 0.08em;
+  margin: 0;
+}
+
 .home-greeting-main {
   font-size: clamp(1.7rem, 4.2vw, 2.8rem);
   font-weight: 700;
@@ -228,6 +236,9 @@ body.has-tenant-bg .screen-home {
 }
 body.has-tenant-bg .home-greeting-main {
   color: #1a1a1a;
+}
+body.has-tenant-bg .home-tenant-name {
+  color: var(--color-accent);
 }
 body.has-tenant-bg .home-greeting-sub,
 body.has-tenant-bg .home-start-hint,
