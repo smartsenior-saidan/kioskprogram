@@ -6,12 +6,10 @@
 // Results are cached for the session to keep typing snappy.
 
 import {
-  db,
   getDocs,
   tenantQuery,
   COLLECTIONS,
 } from "./firebase.js";
-import { logSearch } from "./analytics.js";
 
 // --- Fuzzy matching utilities ----------------------------------------------
 
@@ -147,15 +145,14 @@ export async function loadPersons(forceRefresh = false) {
 /**
  * Fuzzy-search the tenant's persons.
  * @param {string} queryText raw user input
- * @param {object} [opts] { maxResults = 12, logEvent = true }
+ * @param {object} [opts] { maxResults = 12 }
  * @returns {Promise<Array>} ranked person objects with a `_score` field
  */
 export async function searchPersons(queryText, opts = {}) {
-  const { maxResults = 12, logEvent = true } = opts;
+  const { maxResults = 12 } = opts;
   const qFull = normalize(queryText);
 
   if (!qFull) return [];
-  if (logEvent) logSearch(queryText.trim());
 
   const qTokens = qFull.split(" ").filter(Boolean);
   const persons = await loadPersons();
@@ -246,14 +243,14 @@ export function initSearchScreen() {
   if (!input || !results) return;
 
   let debounce;
-  const run = async (logIt) => {
+  const run = async () => {
     const text = input.value;
     if (!text.trim()) {
       results.innerHTML = "";
       return;
     }
     try {
-      const matches = await searchPersons(text, { logEvent: logIt });
+      const matches = await searchPersons(text);
       renderResults(matches, results);
     } catch (err) {
       console.error("[search] failed:", err);
@@ -262,16 +259,16 @@ export function initSearchScreen() {
     }
   };
 
-  // Live search while typing (no event spam — log only on submit/idle).
+  // Live search while typing.
   input.addEventListener("input", () => {
     clearTimeout(debounce);
-    debounce = setTimeout(() => run(false), 220);
+    debounce = setTimeout(run, 220);
   });
 
-  // Explicit submit logs the search_query event.
+  // Explicit submit/search button.
   const submit = () => {
     clearTimeout(debounce);
-    run(true);
+    run();
   };
   if (button) button.addEventListener("click", submit);
   input.addEventListener("keydown", (e) => {
