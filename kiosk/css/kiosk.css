@@ -271,9 +271,9 @@ body.has-tenant-bg .f-member-years {
 
 .search-back-btn {
   position: absolute;
-  bottom: clamp(20px, 3vh, 36px);
-  left: clamp(20px, 3vw, 36px);
-  top: auto;
+  top: clamp(16px, 2.5vh, 28px);
+  left: clamp(16px, 2.5vw, 28px);
+  bottom: auto;
   z-index: 10;
 }
 
@@ -283,7 +283,7 @@ body.has-tenant-bg .f-member-years {
   display: flex;
   align-items: center;
   gap: 14px;
-  padding: clamp(24px, 4vh, 40px) 36px 16px;
+  padding: clamp(16px, 2.5vh, 28px) 28px 14px clamp(140px, 20vw, 180px);
   background: transparent;
   flex-shrink: 0;
 }
@@ -341,7 +341,8 @@ body.has-tenant-bg .f-member-years {
   box-shadow: 0 2px 10px rgba(0, 113, 227, 0.22);
 }
 
-/* ---- Body row: keyboard left + results right ---- */
+/* ---- Body row: keyboard left + results right (landscape)
+        keyboard bottom + results top (portrait)           ---- */
 
 .search-body {
   flex: 1;
@@ -349,9 +350,63 @@ body.has-tenant-bg .f-member-years {
   justify-content: center;
   align-items: flex-end;
   gap: 16px;
-  padding: 12px 20px 104px;
+  padding: 8px 20px 20px;
   overflow: hidden;
   min-height: 0;
+}
+
+/* ── Landscape: back button sits top-left, input row uses normal padding ── */
+@media (orientation: landscape) {
+  .search-input-row {
+    padding-left: clamp(140px, 14vw, 180px);
+  }
+
+  .search-body {
+    padding-bottom: 20px;
+  }
+}
+
+/* ── Portrait layout ── */
+@media (orientation: portrait) {
+  .search-body {
+    flex-direction: column;
+    align-items: stretch;
+    justify-content: flex-end;
+    gap: 10px;
+    padding: 0 14px 16px;
+  }
+
+  /* Results fill available vertical space above keyboard */
+  .search-results-panel {
+    order: 1;
+    width: 100% !important;
+    flex: 1;
+    min-height: 0;
+    max-height: none;
+  }
+
+  .search-results-panel.panel-open {
+    display: flex;
+    flex-direction: column;
+  }
+
+  /* Keyboard: full-width, compact, at the bottom */
+  .keyboard-area {
+    order: 2;
+    width: 100% !important;
+    max-width: none;
+    flex-shrink: 0;
+  }
+
+  .kb-key {
+    height: clamp(40px, 5.2vh, 60px);
+    font-size: 1.4rem;
+  }
+
+  .kb-space,
+  .kb-clear-all {
+    height: 54px;
+  }
 }
 
 /* ---- Results panel — right column ---- */
@@ -535,6 +590,14 @@ body.has-tenant-bg .f-member-years {
   gap: 8px;
   width: 100px;
   flex-shrink: 0;
+  align-self: stretch;
+}
+
+/* Special column keys flex to fill height regardless of item count */
+.kb-special .kb-key {
+  flex: 1;
+  height: auto;
+  min-height: 40px;
 }
 
 .kb-key {
@@ -589,6 +652,13 @@ body.has-tenant-bg .f-member-years {
 }
 
 .kb-key.action:active { background: #8e9399; box-shadow: 0 0 0 rgba(0,0,0,0.1); }
+
+/* Dakuten / handakuten — gray modifier, larger label */
+.kb-key.action[data-action="dakuten"],
+.kb-key.action[data-action="handakuten"] {
+  font-size: 1.35rem;
+  line-height: 1;
+}
 
 /* Bottom bar: space + clear */
 .kb-bottom {

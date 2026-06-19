@@ -187,15 +187,30 @@
         ['ぁ','ぃ','ぅ','ぇ','ぉ','ゃ','ゅ','ょ','っ','ゎ'],
       ];
 
-      // Special column (one slot per row)
+      // Special column — flex-fills the same height as the main grid
       const KB_HIRAGANA_SPECIAL = [
-        { type:'action', action:'bs',    label:'⌫', sub:'削除' },
+        { type:'action', action:'bs',         label:'⌫', sub:'削除' },
         { type:'empty' },
-        { type:'action', action:'left',  label:'←' },
-        { type:'action', action:'right', label:'→' },
-        { type:'char',   char:'ー',      label:'ー' },
-        { type:'char',   char:'。',      label:'。' },
+        { type:'action', action:'left',       label:'←' },
+        { type:'action', action:'right',      label:'→' },
+        { type:'action', action:'dakuten',    label:'゛' },
+        { type:'action', action:'handakuten', label:'゜' },
+        { type:'char',   char:'ー',           label:'ー' },
+        { type:'char',   char:'・',           label:'・' },
       ];
+
+      // Dakuten (voiced) combining map
+      const DAKUTEN_MAP = {
+        'か':'が','き':'ぎ','く':'ぐ','け':'げ','こ':'ご',
+        'さ':'ざ','し':'じ','す':'ず','せ':'ぜ','そ':'ぞ',
+        'た':'だ','ち':'ぢ','つ':'づ','て':'で','と':'ど',
+        'は':'ば','ひ':'び','ふ':'ぶ','へ':'べ','ほ':'ぼ',
+        'う':'ゔ',
+      };
+      // Handakuten (semi-voiced) combining map
+      const HANDAKUTEN_MAP = {
+        'は':'ぱ','ひ':'ぴ','ふ':'ぷ','へ':'ぺ','ほ':'ぽ',
+      };
 
       const KB_QWERTY_ROWS = [
         ['Q','W','E','R','T','Y','U','I','O','P'],
@@ -276,6 +291,28 @@
         if (ch) {
           input.value = val.slice(0, pos) + ch + val.slice(pos);
           setCaretPos(pos + 1);
+        } else if (action === 'dakuten') {
+          if (pos > 0) {
+            const voiced = DAKUTEN_MAP[val[pos - 1]];
+            if (voiced) {
+              input.value = val.slice(0, pos - 1) + voiced + val.slice(pos);
+              setCaretPos(pos);
+              input.dispatchEvent(new Event('input', { bubbles: true }));
+              return;
+            }
+          }
+          return; // no-op if previous char can't take dakuten
+        } else if (action === 'handakuten') {
+          if (pos > 0) {
+            const semi = HANDAKUTEN_MAP[val[pos - 1]];
+            if (semi) {
+              input.value = val.slice(0, pos - 1) + semi + val.slice(pos);
+              setCaretPos(pos);
+              input.dispatchEvent(new Event('input', { bubbles: true }));
+              return;
+            }
+          }
+          return; // no-op if previous char can't take handakuten
         } else if (action === 'bs') {
           if (pos > 0) {
             input.value = val.slice(0, pos - 1) + val.slice(pos);
