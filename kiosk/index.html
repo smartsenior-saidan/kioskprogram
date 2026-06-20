@@ -429,8 +429,19 @@
       (function () {
         function tryNavigate(scanned) {
           const s = scanned.trim();
-          if (s.includes('family.html') && s.includes('person=')) {
-            try { window.location.href = new URL(s).href; } catch (_) {}
+          if (!s) return;
+          if ((s.includes('family') || s.includes('person=')) && s.includes('person=')) {
+            try {
+              const url = new URL(s);
+              const personId = url.searchParams.get('person');
+              if (personId) {
+                window.location.href = `family.html?person=${encodeURIComponent(personId)}`;
+              }
+            } catch (_) {
+              // Relative URL fallback
+              const id = new URLSearchParams(s.split('?')[1] || '').get('person');
+              if (id) window.location.href = `family.html?person=${encodeURIComponent(id)}`;
+            }
           }
         }
 
