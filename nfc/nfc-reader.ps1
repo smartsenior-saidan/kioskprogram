@@ -17,6 +17,7 @@ $LogPath              = "C:\KioskProgram\nfc\reader.log"
 function Write-Log {
     param($message)
     $line = "$(Get-Date -Format 'yyyy-MM-dd HH:mm:ss') - $message"
+    Write-Host $line
     try { $line | Out-File -FilePath $LogPath -Append -Encoding UTF8 } catch {}
 }
 
@@ -147,9 +148,13 @@ function ConvertFrom-Ndef {
     $code = [int]$rec[4]
     $prefix = if ($code -lt $prefixes.Length) { $prefixes[$code] } else { '' }
     $urlBytes = $rec[5..($rec.Length - 1)]
-    $urlPart = [System.Text.Encoding]::ASCII.GetString($urlBytes)
-    # Strip any terminator / padding bytes
-    $urlPart = ($urlPart -split "[`0`xFE]")[0].Trim()
+    # Build the URL byte-by-byte, stopping at a null or NDEF terminator (0xFE).
+    $sb = New-Object System.Text.StringBuilder
+    foreach ($b in $urlBytes) {
+        if ($b -eq 0x00 -or $b -eq 0xFE) { break }
+        [void]$sb.Append([char]$b)
+    }
+    $urlPart = $sb.ToString().Trim()
     if ($urlPart -eq '') { return $null }
     return $prefix + $urlPart
 }
@@ -227,9 +232,9 @@ while ($true) {
     # Pending home redirect after card removal
     if ($null -ne $removeTime) {
         if (((Get-Date) - $removeTime).TotalSeconds -ge $RedirectDelaySeconds) {
-            $home = Get-HomeUrl
-            Write-Log "Redirecting to home -> $home"
-            Open-Url $home
+            $homeUrl = Get-HomeUrl
+            Write-Log "Redirecting to home -> $homeUrl"
+            Open-Url $homeUrl
             $removeTime = $null
         }
     }
