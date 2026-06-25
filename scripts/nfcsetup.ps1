@@ -47,14 +47,14 @@ if (-not (Test-Path $gitPath)) {
 # 3. Clone or update repo — remove folder first if it exists but isn't a git repo
 if (Test-Path "$installPath\.git") {
     Write-Log "Updating repository..."
-    & $gitPath -C $installPath pull
+    & $gitPath -C $installPath pull 2>&1 | ForEach-Object { Write-Log $_ }
 } else {
     if (Test-Path $installPath) {
         Write-Log "Removing existing folder before clone..."
         Remove-Item -Path $installPath -Recurse -Force
     }
     Write-Log "Cloning repository..."
-    & $gitPath clone $repoUrl $installPath
+    & $gitPath clone $repoUrl $installPath 2>&1 | ForEach-Object { Write-Log $_ }
 }
 
 # 4. Install npm packages
