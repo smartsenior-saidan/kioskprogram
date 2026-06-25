@@ -90,12 +90,14 @@ $taskSettings = New-ScheduledTaskSettingsSet `
     -RestartCount 3 `
     -RestartInterval (New-TimeSpan -Minutes 1)
 
+$taskPrincipal = New-ScheduledTaskPrincipal -GroupId "BUILTIN\Users" -RunLevel Highest
+
 Register-ScheduledTask `
     -TaskName "SmartSenior-NFCReader" `
     -Action $taskAction `
     -Trigger $taskTrigger `
     -Settings $taskSettings `
-    -RunLevel Highest `
+    -Principal $taskPrincipal `
     -Force
 
 Write-Log "Scheduled task registered"
