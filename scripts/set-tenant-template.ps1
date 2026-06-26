@@ -33,7 +33,7 @@ Write-Output "Config written: $configFile"
 # instead of opening new windows on every card tap.
 # --user-data-dir is required when using the remote debugging port.
 
-$edgeArgs = "--remote-debugging-port=9222 --user-data-dir=`"C:\EdgeKiosk`" --start-fullscreen `"$homeUrl`""
+$edgeArgs = "--remote-debugging-port=9222 --remote-allow-origins=http://127.0.0.1:9222 --user-data-dir=`"C:\EdgeKiosk`" --start-fullscreen `"$homeUrl`""
 
 $action = New-ScheduledTaskAction -Execute $edgePath -Argument $edgeArgs
 

@@ -129,11 +129,16 @@ def navigate(url):
 
 def _close_extra_tabs():
     try:
+        home = get_home_url().rstrip("/").split("?")[0]
         targets = requests.get(f"http://127.0.0.1:{DEBUG_PORT}/json", timeout=1).json()
-        for p in [t for t in targets if t.get("type") == "page"][1:]:
+        pages = [t for t in targets if t.get("type") == "page"]
+        for p in pages[1:]:
+            url = p.get("url", "")
+            if home in url:
+                continue
             if p.get("id"):
                 requests.get(f"http://127.0.0.1:{DEBUG_PORT}/json/close/{p['id']}", timeout=1)
-                log(f"Closed extra tab: {p.get('url','')[:60]}")
+                log(f"Closed extra tab: {url[:60]}")
     except Exception:
         pass
 
@@ -145,10 +150,11 @@ def _tab_guard_loop():
 def _detect_reader():
     try:
         rdrs = readers()
-        if rdrs:
-            log(f"NFC reader: {rdrs[0]}")
-            return rdrs[0]
-        log("No NFC reader found")
+        for r in rdrs:
+            if "ACR" in str(r) or "ACS" in str(r):
+                log(f"NFC reader: {r}")
+                return r
+        log(f"ACR122U not found. Available readers: {[str(r) for r in rdrs]}")
         return None
     except Exception as e:
         log_err(f"NFC detect error: {e}")
