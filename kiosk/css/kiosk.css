@@ -294,6 +294,10 @@ body.has-tenant-bg .f-member-years {
   background: #e4ddcd;
 }
 
+.search-clear-btn:active {
+  transform: translateY(-50%) scale(0.97);
+}
+
 .search-go-btn {
   height: 68px;
   padding: 0 34px;
@@ -535,11 +539,24 @@ body.has-tenant-bg .f-member-years {
   box-shadow: var(--shadow);
 }
 
+.fc-name-row {
+  display: flex;
+  align-items: baseline;
+  justify-content: center;
+  gap: 12px;
+  margin-bottom: 6px;
+}
+
 .fc-name {
   font-size: 1.9rem;
   font-weight: 700;
   color: var(--color-text);
-  margin-bottom: 6px;
+}
+
+.fc-seshu-badge {
+  font-size: 1.9rem;
+  font-weight: 700;
+  color: var(--color-text);
 }
 
 .fc-meta {

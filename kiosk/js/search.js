@@ -220,6 +220,25 @@ function groupByFamily(results) {
   return groups;
 }
 
+/**
+ * 区画 (plot) is a family-wide fact, but admins only need to enter it on one
+ * member's profile. The representative person picked by groupByFamily() is
+ * whoever scored highest for this query, which may not be the member the
+ * field was actually filled in on — so fall back to any other family member
+ * (via related_persons) who has the value set.
+ */
+function fillFamilyPlot(person) {
+  let plot = person.plot;
+  if (!plot && _personCache) {
+    const ids = new Set([person.id, ...(person.related_persons || [])]);
+    for (const p of _personCache) {
+      if (!ids.has(p.id)) continue;
+      if (p.plot) { plot = p.plot; break; }
+    }
+  }
+  return plot;
+}
+
 function renderResults(results, container) {
   container.innerHTML = "";
 
@@ -246,14 +265,17 @@ function renderResults(results, container) {
     const nameLabel = isFamily
       ? `${person.last_name || ''}家`
       : `${person.last_name || ''} ${person.first_name || ''}`.trim();
-    const plotRow = person.plot ? `<span>区画：<strong>${person.plot}</strong></span>` : '';
-    const seshuRow = person.seshu_name ? `<span>施主：<strong>${person.seshu_name}</strong></span>` : '';
+    const plot = isFamily ? fillFamilyPlot(person) : person.plot;
+    const plotRow = plot ? `<span>区画：<strong>${plot}</strong></span>` : '';
+    const seshuBadge = `<span class="fc-seshu-badge">施主：</span>`;
 
     card.innerHTML = `
-      <div class="fc-name">${nameLabel}</div>
+      <div class="fc-name-row">
+        ${seshuBadge}
+        <div class="fc-name">${nameLabel}</div>
+      </div>
       <div class="fc-meta">
         ${plotRow}
-        ${seshuRow}
       </div>
       <div class="fc-actions">
         <button class="fc-btn-detail">詳細</button>

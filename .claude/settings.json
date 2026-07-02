@@ -5,7 +5,8 @@
       "Bash(grep -n \"#[0-9a-fA-F]\\\\{3,6\\\\}\\\\b\" /Users/linusfujisawa/Desktop/Programming/SmartSenior/KioskProgram/admin/css/admin.css)",
       "Bash(grep -n \"#[0-9a-fA-F]\\\\{3,6\\\\}\\\\|style=\\\\\"color\" /Users/linusfujisawa/Desktop/Programming/SmartSenior/KioskProgram/admin/js/admin.js)",
       "Bash(node --check /Users/linusfujisawa/Desktop/Programming/SmartSenior/KioskProgram/admin/js/admin.js)",
-      "Bash(python3 -)"
+      "Bash(python3 -)",
+      "Bash(\"/Applications/Google Chrome.app/Contents/MacOS/Google Chrome\" --headless=new --disable-gpu --hide-scrollbars --force-device-scale-factor=1 --window-size=1100,700 --virtual-time-budget=2500 --screenshot=\"/private/tmp/claude-501/-Users-linusfujisawa-Desktop-Programming-SmartSenior-KioskProgram/924a081b-94b9-499f-af9a-4c6ed47b398e/scratchpad/ty_out3.png\" \"file:///Users/linusfujisawa/Desktop/Programming/SmartSenior/KioskProgram/kiosk/thankyou.html\")"
     ]
   }
 }
