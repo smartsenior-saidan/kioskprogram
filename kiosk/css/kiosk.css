@@ -307,6 +307,7 @@ body.has-tenant-bg .f-member-years {
 /* ---- Family vs individual result mode toggle ---- */
 
 .mode-switcher {
+  position: relative;
   display: flex;
   flex-shrink: 0;
   background: #efeae0;
@@ -318,7 +319,24 @@ body.has-tenant-bg .f-member-years {
   align-items: center;
 }
 
+.mode-slider {
+  position: absolute;
+  top: 4px;
+  bottom: 4px;
+  left: 0;
+  border-radius: 14px;
+  background: var(--color-accent);
+  box-shadow: 0 2px 10px rgba(0, 113, 227, 0.35);
+  transition:
+    transform 0.3s cubic-bezier(0.22, 1, 0.36, 1),
+    width 0.3s cubic-bezier(0.22, 1, 0.36, 1);
+  z-index: 0;
+  will-change: transform;
+}
+
 .mode-btn {
+  position: relative;
+  z-index: 1;
   height: 100%;
   min-width: unset;
   min-height: unset;
@@ -330,13 +348,14 @@ body.has-tenant-bg .f-member-years {
   border: none;
   border-radius: 14px;
   cursor: pointer;
-  transition: background 0.15s ease, color 0.15s ease;
+  outline: none;
+  transition: color 0.15s ease;
 }
 
 .mode-btn.active {
-  background: #fff;
-  color: var(--color-text);
-  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.1);
+  color: #fff;
+  outline: 2px solid var(--color-accent);
+  outline-offset: 2px;
 }
 
 .mode-btn:not(.active):hover {
@@ -1117,7 +1136,7 @@ body.has-tenant-bg .f-member-years {
   position: absolute;
   left: 0;
   right: 0;
-  bottom: 28px;
+  bottom: 100px;
   z-index: 30;
   display: flex;
   flex-direction: column;

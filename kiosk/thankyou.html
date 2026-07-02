@@ -15,7 +15,7 @@
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
     <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Shippori+Mincho:wght@400;500;600;700;800&display=swap" />
-    <link rel="stylesheet" href="css/kiosk.css?v=36" />
+    <link rel="stylesheet" href="css/kiosk.css?v=38" />
     <script src="js/config.js"></script>
     <style>
       .ty-page {
@@ -41,10 +41,11 @@
       }
 
       .ty-sub {
-        font-size: clamp(1rem, 1.8vw, 1.5rem);
+        font-size: clamp(1.3rem, 2.4vw, 2rem);
         color: #555;
         letter-spacing: 0.06em;
         line-height: 1.6;
+        max-width: 56ch;
         animation: ty-fadein 1.2s cubic-bezier(0.22, 1, 0.36, 1) 0.3s both;
       }
 
@@ -67,14 +68,14 @@
       }
 
       .ty-countdown-ring {
-        width: 80px;
-        height: 80px;
+        width: 100px;
+        height: 100px;
         position: relative;
       }
 
       .ty-ring-svg {
-        width: 80px;
-        height: 80px;
+        width: 100px;
+        height: 100px;
         transform: rotate(-90deg);
       }
 
@@ -100,14 +101,14 @@
         display: flex;
         align-items: center;
         justify-content: center;
-        font-size: 1.6rem;
+        font-size: 2rem;
         font-weight: 700;
         color: var(--color-accent);
       }
 
       .ty-countdown-label {
-        font-size: clamp(0.85rem, 1.2vw, 1rem);
-        color: #888;
+        font-size: clamp(1.3rem, 2.2vw, 1.7rem);
+        color: #666;
         letter-spacing: 0.04em;
       }
 

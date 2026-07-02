@@ -1,5 +1,5 @@
 /* ==========================================================================
-   SmartSenior Admin — Login page (Apple-style)
+   SmartSenior Admin — Login page (white / grey professional theme)
    ========================================================================== */
 
 *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
@@ -7,8 +7,8 @@
 body {
   font-family: -apple-system, BlinkMacSystemFont, "SF Pro Text", "Segoe UI", sans-serif;
   font-size: 15px;
-  background: #F5F5F7;
-  color: #1D1D1F;
+  background-color: #F0F1F3;
+  color: #1D1F23;
   min-height: 100vh;
   display: flex;
   align-items: center;
@@ -22,13 +22,20 @@ body {
 .login-wrap {
   width: 100%;
   max-width: 400px;
+  animation: fadeScaleIn 0.4s cubic-bezier(0.22, 0.61, 0.36, 1);
+}
+
+@keyframes fadeScaleIn {
+  from { opacity: 0; transform: scale(0.97) translateY(6px); }
+  to   { opacity: 1; transform: scale(1) translateY(0); }
 }
 
 .login-card {
-  background: #fff;
+  background: #FFFFFF;
+  border: 1px solid #E1E3E6;
   border-radius: 20px;
   padding: 44px 40px 36px;
-  box-shadow: 0 2px 24px rgba(0, 0, 0, 0.08);
+  box-shadow: 0 14px 40px rgba(20, 22, 26, 0.1);
 }
 
 /* ---- Brand ----------------------------------------------------------------- */
@@ -43,29 +50,30 @@ body {
 .login-logo {
   width: 56px;
   height: 56px;
-  border-radius: 14px;
-  background: #1D1D1F;
-  color: #fff;
+  border-radius: 15px;
+  background: #475569;
+  color: #FFFFFF;
   font-size: 1.6rem;
-  font-weight: 700;
+  font-weight: 800;
   display: flex;
   align-items: center;
   justify-content: center;
   letter-spacing: -1px;
   margin-bottom: 14px;
+  box-shadow: 0 4px 14px rgba(71, 85, 105, 0.3);
 }
 
 .login-title {
   font-size: 1.3rem;
   font-weight: 700;
   letter-spacing: -0.4px;
-  color: #1D1D1F;
+  color: #1D1F23;
   margin-bottom: 4px;
 }
 
 .login-subtitle {
   font-size: 0.9rem;
-  color: #6E6E73;
+  color: #6B7076;
 }
 
 /* ---- Status ---------------------------------------------------------------- */
@@ -79,9 +87,9 @@ body {
   line-height: 1.4;
 }
 
-.login-status.error   { background: #FFF2F2; color: #C0392B; border: 1px solid #FECACA; }
-.login-status.success { background: #F0FFF4; color: #15803D; border: 1px solid #BBF7D0; }
-.login-status.info    { background: #F1F3F5; color: #334155; border: 1px solid #D3D8DE; }
+.login-status.error   { background: rgba(229,69,60,0.08);  color: #C93B33; border: 1px solid rgba(229,69,60,0.25); }
+.login-status.success { background: rgba(31,168,85,0.08);  color: #16813D; border: 1px solid rgba(31,168,85,0.25); }
+.login-status.info    { background: rgba(71,85,105,0.08);  color: #334155; border: 1px solid rgba(71,85,105,0.22); }
 
 /* ---- Form fields ----------------------------------------------------------- */
 
@@ -93,7 +101,7 @@ body {
   display: block;
   font-size: 0.85rem;
   font-weight: 600;
-  color: #1D1D1F;
+  color: #1D1F23;
   margin-bottom: 6px;
 }
 
@@ -103,15 +111,15 @@ body {
   padding: 0 14px;
   font-size: 0.95rem;
   font-family: inherit;
-  color: #1D1D1F;
-  background: #fff;
-  border: 1.5px solid #D2D2D7;
+  color: #1D1F23;
+  background: #F5F6F7;
+  border: 1.5px solid #E1E3E6;
   border-radius: 12px;
   outline: none;
   transition: border-color 0.15s ease, box-shadow 0.15s ease;
 }
 
-.field input::placeholder { color: #AEAEB2; }
+.field input::placeholder { color: #A6ABB2; }
 
 .field input:focus {
   border-color: #475569;
@@ -124,22 +132,23 @@ body {
   width: 100%;
   height: 46px;
   margin-top: 8px;
-  background: #1D1D1F;
-  color: #fff;
+  background: #475569;
+  color: #FFFFFF;
   font-family: inherit;
   font-size: 0.95rem;
-  font-weight: 600;
+  font-weight: 700;
   border: none;
   border-radius: 12px;
   cursor: pointer;
-  transition: background 0.15s ease, opacity 0.15s ease;
+  transition: background 0.15s ease, opacity 0.15s ease, transform 0.12s ease;
   letter-spacing: -0.1px;
 }
 
-.btn-primary:hover { background: #3A3A3C; }
+.btn-primary:hover { background: #334155; }
+.btn-primary:active { transform: scale(0.98); }
 
 .btn-primary:disabled {
-  opacity: 0.5;
+  opacity: 0.45;
   cursor: not-allowed;
 }
 
@@ -149,7 +158,7 @@ body {
   margin-top: 16px;
   background: none;
   border: none;
-  color: #475569;
+  color: #6B7076;
   font-family: inherit;
   font-size: 0.88rem;
   font-weight: 500;
@@ -158,7 +167,7 @@ body {
   padding: 4px;
 }
 
-.btn-forgot:hover { color: #334155; text-decoration: underline; }
+.btn-forgot:hover { color: #475569; text-decoration: underline; }
 
 /* ---- Hidden ---------------------------------------------------------------- */
 

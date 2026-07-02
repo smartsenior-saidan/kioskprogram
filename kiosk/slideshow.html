@@ -15,7 +15,7 @@
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
     <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Shippori+Mincho:wght@400;500;600;700;800&display=swap" />
-    <link rel="stylesheet" href="css/kiosk.css?v=36" />
+    <link rel="stylesheet" href="css/kiosk.css?v=38" />
     <script src="js/config.js"></script>
     <style>
       /* ── Slideshow nav bar ─────────────────────────────────────────────── */
@@ -47,19 +47,21 @@
         position: absolute;
         left: 50%;
         transform: translateX(-50%);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        width: 56px;
         height: 56px;
-        min-width: 140px;
-        padding: 0 28px;
-        font-size: 1.05rem;
-        font-weight: 600;
+        padding: 0;
         color: #fff;
         background: var(--color-accent);
         border: none;
-        border-radius: 14px;
+        border-radius: 50%;
         cursor: pointer;
         transition: background 0.12s ease;
         flex-shrink: 0;
       }
+      .sld-stop-btn svg { width: 22px; height: 22px; fill: currentColor; }
       .sld-stop-btn:active { filter: brightness(0.9); }
       .sld-stop-btn.is-paused {
         background: #fff;
@@ -123,7 +125,7 @@
 
     <!-- Bottom navigation bar -->
     <div class="sld-nav" id="sldNav" style="display:none">
-      <button class="sld-stop-btn" id="sldStop">停止</button>
+      <button class="sld-stop-btn" id="sldStop" aria-label="停止"></button>
       <span class="sld-counter" id="sldCounter">1 / 1</span>
     </div>
 
@@ -306,10 +308,14 @@
         autoTimer = null;
       }
 
+      const ICON_PAUSE = '<svg viewBox="0 0 20 20"><rect x="4" y="3" width="4" height="14" rx="1"/><rect x="12" y="3" width="4" height="14" rx="1"/></svg>';
+      const ICON_PLAY  = '<svg viewBox="0 0 20 20"><path d="M5 3.5a1 1 0 0 1 1.53-.85l9 6.5a1 1 0 0 1 0 1.7l-9 6.5A1 1 0 0 1 5 16.5v-13z"/></svg>';
+
       function updateStopBtn() {
         const btn = document.getElementById('sldStop');
         if (!btn) return;
-        btn.textContent = autoPlaying ? '停止' : '再開';
+        btn.innerHTML = autoPlaying ? ICON_PAUSE : ICON_PLAY;
+        btn.setAttribute('aria-label', autoPlaying ? '停止' : '再開');
         btn.classList.toggle('is-paused', !autoPlaying);
       }
 

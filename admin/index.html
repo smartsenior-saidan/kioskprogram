@@ -4,8 +4,8 @@
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>Admin — SmartSenior</title>
-    <link rel="stylesheet" href="css/style.css" />
-    <link rel="stylesheet" href="css/admin.css" />
+    <link rel="stylesheet" href="css/style.css?v=5" />
+    <link rel="stylesheet" href="css/admin.css?v=6" />
   </head>
   <body>
     <div class="app-shell">
@@ -18,19 +18,25 @@
         </div>
 
         <nav class="sidebar-nav">
-          <button class="nav-item active" data-section="dashboard">
+          <button class="nav-item" data-section="dashboard">
             <span class="nav-icon">
               <svg viewBox="0 0 20 20" fill="currentColor"><path d="M3 4a1 1 0 011-1h4a1 1 0 011 1v4a1 1 0 01-1 1H4a1 1 0 01-1-1V4zm0 8a1 1 0 011-1h4a1 1 0 011 1v4a1 1 0 01-1 1H4a1 1 0 01-1-1v-4zm8-8a1 1 0 011-1h4a1 1 0 011 1v4a1 1 0 01-1 1h-4a1 1 0 01-1-1V4zm0 8a1 1 0 011-1h4a1 1 0 011 1v4a1 1 0 01-1 1h-4a1 1 0 01-1-1v-4z"/></svg>
             </span>
             <span data-i18n="nav.dashboard">Dashboard</span>
           </button>
-          <button class="nav-item" data-section="profiles">
+          <button class="nav-item" data-section="family">
             <span class="nav-icon">
               <svg viewBox="0 0 20 20" fill="currentColor"><path d="M9 6a3 3 0 11-6 0 3 3 0 016 0zM17 6a3 3 0 11-6 0 3 3 0 016 0zM12.93 17c.046-.327.07-.66.07-1a6.97 6.97 0 00-1.5-4.33A5 5 0 0119 16v1h-6.07zM6 11a5 5 0 015 5v1H1v-1a5 5 0 015-5z"/></svg>
             </span>
-            <span data-i18n="nav.profiles">Profiles</span>
+            <span data-i18n="nav.familyMembers">Family Members</span>
           </button>
-          <button class="nav-item" data-section="new-profile">
+          <button class="nav-item" data-section="individual">
+            <span class="nav-icon">
+              <svg viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M10 9a3 3 0 100-6 3 3 0 000 6zm-7 9a7 7 0 1114 0H3z" clip-rule="evenodd"/></svg>
+            </span>
+            <span data-i18n="nav.individualMembers">Individual Members</span>
+          </button>
+          <button class="nav-item active" data-section="new-profile">
             <span class="nav-icon">
               <svg viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M10 3a1 1 0 011 1v5h5a1 1 0 110 2h-5v5a1 1 0 11-2 0v-5H4a1 1 0 110-2h5V4a1 1 0 011-1z" clip-rule="evenodd"/></svg>
             </span>
@@ -38,16 +44,8 @@
           </button>
         </nav>
 
-        <div class="sidebar-footer">
-          <div class="sidebar-user">
-            <div class="sidebar-user-name" id="sidebarUser">—</div>
-            <div class="sidebar-user-role" id="sidebarRole">Admin</div>
-          </div>
-          <div class="tenant-pill" id="tenantBadge">—</div>
-          <button class="sign-out-btn" id="signOutBtn">
-            <svg viewBox="0 0 20 20" fill="currentColor" width="16" height="16"><path fill-rule="evenodd" d="M3 3a1 1 0 00-1 1v12a1 1 0 001 1h7a1 1 0 100-2H4V5h6a1 1 0 100-2H3zm11.293 4.293a1 1 0 011.414 0l3 3a1 1 0 010 1.414l-3 3a1 1 0 01-1.414-1.414L15.586 11H9a1 1 0 110-2h6.586l-1.293-1.293a1 1 0 010-1.414z" clip-rule="evenodd"/></svg>
-            <span data-i18n="signOut">Sign out</span>
-          </button>
+        <div class="sidebar-foot">
+          <div class="rail-tenant" id="tenantBadge">—</div>
         </div>
       </aside>
 
@@ -56,51 +54,25 @@
 
         <header class="top-bar">
           <div class="top-bar-left">
-            <button class="menu-toggle" id="menuToggle" aria-label="Toggle sidebar">
-              <svg viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M3 5a1 1 0 011-1h12a1 1 0 110 2H4a1 1 0 01-1-1zM3 10a1 1 0 011-1h12a1 1 0 110 2H4a1 1 0 01-1-1zM3 15a1 1 0 011-1h12a1 1 0 110 2H4a1 1 0 01-1-1z" clip-rule="evenodd"/></svg>
-            </button>
-            <h2 class="page-title" id="pageTitle">Dashboard</h2>
+            <h2 class="page-title" id="pageTitle">New Profile</h2>
           </div>
           <div class="top-bar-right">
             <div id="topStatus" class="top-status hidden"></div>
+            <div class="lang-switch" id="langSwitch">
+              <button type="button" data-lang="en">EN</button>
+              <button type="button" data-lang="ja">日本語</button>
+            </div>
+            <button class="topbar-signout" id="signOutBtn">
+              <svg viewBox="0 0 20 20" fill="currentColor" width="16" height="16"><path fill-rule="evenodd" d="M3 3a1 1 0 00-1 1v12a1 1 0 001 1h7a1 1 0 100-2H4V5h6a1 1 0 100-2H3zm11.293 4.293a1 1 0 011.414 0l3 3a1 1 0 010 1.414l-3 3a1 1 0 01-1.414-1.414L15.586 11H9a1 1 0 110-2h6.586l-1.293-1.293a1 1 0 010-1.414z" clip-rule="evenodd"/></svg>
+              <span data-i18n="signOut">Sign out</span>
+            </button>
           </div>
         </header>
 
         <main class="content">
 
-          <!-- ══ DASHBOARD ══ -->
-          <section id="sec-dashboard" class="section active">
-
-            <div class="fi-panels">
-              <div class="card">
-                <div class="card-row" style="margin-bottom:16px">
-                  <h3 class="card-title" data-i18n="fi.familyMembers">Family Members</h3>
-                </div>
-                <input id="familySearchInput" type="search" placeholder="Search by name…" data-i18n-ph="ph.fiSearch" aria-label="Search family members" class="fi-search" />
-                <div id="fiFamilyList" class="fi-list"><div class="spinner"></div></div>
-              </div>
-
-              <div class="card">
-                <div class="card-row" style="margin-bottom:16px">
-                  <h3 class="card-title" data-i18n="fi.individualMembers">Individual Members</h3>
-                </div>
-                <input id="individualSearchInput" type="search" placeholder="Search by name…" data-i18n-ph="ph.fiSearch" aria-label="Search individual members" class="fi-search" />
-                <div id="fiIndividualList" class="fi-list"><div class="spinner"></div></div>
-              </div>
-            </div>
-
-            <div class="card" style="margin-top:16px">
-              <div class="card-row">
-                <h3 class="card-title" data-i18n="card.recentProfiles">Recent Profiles</h3>
-                <button class="btn-link" data-section="profiles" data-i18n="link.viewAll">View all →</button>
-              </div>
-              <div id="recentProfiles"><div class="spinner"></div></div>
-            </div>
-
-          </section>
-
-          <!-- ══ ALL PROFILES ══ -->
-          <section id="sec-profiles" class="section">
+          <!-- ══ DASHBOARD — all profiles ══ -->
+          <section id="sec-dashboard" class="section">
             <div class="card">
               <div class="card-row" style="margin-bottom:20px">
                 <h3 class="card-title" data-i18n="card.allProfiles">All Profiles</h3>
@@ -114,8 +86,30 @@
             </div>
           </section>
 
+          <!-- ══ FAMILY MEMBERS ══ -->
+          <section id="sec-family" class="section">
+            <div class="card">
+              <div class="card-row" style="margin-bottom:16px">
+                <h3 class="card-title" data-i18n="fi.familyMembers">Family Members</h3>
+              </div>
+              <input id="familySearchInput" type="search" placeholder="Search by name…" data-i18n-ph="ph.fiSearch" aria-label="Search family members" class="fi-search" />
+              <div id="fiFamilyList" class="fi-list fi-list-full"><div class="spinner"></div></div>
+            </div>
+          </section>
+
+          <!-- ══ INDIVIDUAL MEMBERS ══ -->
+          <section id="sec-individual" class="section">
+            <div class="card">
+              <div class="card-row" style="margin-bottom:16px">
+                <h3 class="card-title" data-i18n="fi.individualMembers">Individual Members</h3>
+              </div>
+              <input id="individualSearchInput" type="search" placeholder="Search by name…" data-i18n-ph="ph.fiSearch" aria-label="Search individual members" class="fi-search" />
+              <div id="fiIndividualList" class="fi-list fi-list-full"><div class="spinner"></div></div>
+            </div>
+          </section>
+
           <!-- ══ NEW / EDIT PROFILE ══ -->
-          <section id="sec-new-profile" class="section">
+          <section id="sec-new-profile" class="section active">
             <div class="form-layout">
 
               <div class="card">
@@ -150,6 +144,12 @@
                     <label for="kaimyo" data-i18n="form.kaimyo">Posthumous name (kaimyo)</label>
                     <input id="kaimyo" type="text" placeholder="戒名" data-i18n-ph="ph.kaimyo" />
                     <p class="field-hint" data-i18n="hint.kaimyo">Buddhist posthumous name, shown next to the name on the kiosk profile.</p>
+                  </div>
+
+                  <div class="field">
+                    <label for="seshuName" data-i18n="form.seshuName">Grave custodian (seshu)</label>
+                    <input id="seshuName" type="text" placeholder="山田太郎" data-i18n-ph="ph.seshuName" />
+                    <p class="field-hint" data-i18n="hint.seshuName">Person responsible for the grave, shown in the kiosk search results.</p>
                   </div>
 
                   <div class="form-row">
@@ -239,7 +239,6 @@
 
                   <div class="form-actions">
                     <button id="saveBtn" type="submit" data-i18n="btn.saveProfile">Save profile</button>
-                    <button id="resetBtn" type="button" class="btn-secondary" data-i18n="btn.clear">Clear</button>
                   </div>
                 </form>
               </div>
@@ -272,7 +271,7 @@
 
     <script src="./js/qrcode.min.js"></script>
     <script type="module">
-      import { initAdminPortal } from "./js/admin.js?v=17";
+      import { initAdminPortal } from "./js/admin.js?v=23";
       initAdminPortal();
     </script>
   </body>

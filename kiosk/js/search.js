@@ -247,11 +247,13 @@ function renderResults(results, container) {
       ? `${person.last_name || ''}家`
       : `${person.last_name || ''} ${person.first_name || ''}`.trim();
     const plotRow = person.plot ? `<span>区画：<strong>${person.plot}</strong></span>` : '';
+    const seshuRow = person.seshu_name ? `<span>施主：<strong>${person.seshu_name}</strong></span>` : '';
 
     card.innerHTML = `
       <div class="fc-name">${nameLabel}</div>
       <div class="fc-meta">
         ${plotRow}
+        ${seshuRow}
       </div>
       <div class="fc-actions">
         <button class="fc-btn-detail">詳細</button>
@@ -269,6 +271,20 @@ function renderResults(results, container) {
 
     container.appendChild(card);
   }
+}
+
+/** Slide the mode-switcher's highlight pill under the currently active button. */
+function positionModeSlider(activeBtn) {
+  const slider = document.getElementById('modeSlider');
+  if (!slider || !activeBtn) return;
+  slider.style.width = `${activeBtn.offsetWidth}px`;
+  slider.style.transform = `translateX(${activeBtn.offsetLeft}px)`;
+}
+
+/** Re-sync the slider position — call after the search screen becomes visible/resizes. */
+export function syncModeSlider() {
+  const active = document.querySelector('#searchModeSwitcher .mode-btn.active');
+  positionModeSlider(active);
 }
 
 /**
@@ -327,6 +343,7 @@ export function initSearchScreen() {
       searchMode = btn.dataset.mode;
       sessionStorage.setItem('kiosk_search_mode', searchMode);
       modeButtons.forEach((b) => b.classList.toggle('active', b === btn));
+      positionModeSlider(btn);
       // Re-render with the new mode's grouping so existing results update
       // immediately instead of waiting for the next keystroke.
       if (input.value.trim()) submit();

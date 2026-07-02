@@ -24,7 +24,7 @@
       rel="stylesheet"
       href="https://fonts.googleapis.com/css2?family=Shippori+Mincho:wght@400;500;600;700;800&display=swap"
     />
-    <link rel="stylesheet" href="css/kiosk.css?v=36" />
+    <link rel="stylesheet" href="css/kiosk.css?v=38" />
     <!-- Pins this kiosk to its memorial site (tenant). Runs before modules. -->
     <script src="js/config.js"></script>
   </head>
@@ -87,6 +87,7 @@
 
         <!-- Family vs individual result mode -->
         <div class="mode-switcher" id="searchModeSwitcher">
+          <div class="mode-slider" id="modeSlider"></div>
           <button class="mode-btn active" data-mode="family">家族</button>
           <button class="mode-btn" data-mode="individual">個人</button>
         </div>
@@ -128,14 +129,13 @@
     </script>
 
     <script type="module">
-      import { initSearchScreen } from "./js/search.js";
+      import { initSearchScreen, syncModeSlider } from "./js/search.js";
       import { applyTenantBackground } from "./js/tenant-bg.js";
 
       // ── Translations ──────────────────────────────────────────────────
       const STRINGS = {
         greetingMain: "ご来館ありがとうございます。",
-        greetingSub:
-          "お名前を検索して、お写真・ご略歴・ご命日をご覧ください。",
+        greetingSub: "お名前を検索して墓誌をご覧ください",
         startBtn: "氏名で検索",
         startHint: "納骨場所の番号もご確認いただけます",
         icNote: "※ ICカードをお持ちの方は\nカードリーダーにかざしてください",
@@ -394,6 +394,7 @@
         requestAnimationFrame(() => {
           openKeyboard();
           measureLayout();
+          syncModeSlider();
         });
       }
       function showHome() {
@@ -406,7 +407,10 @@
 
       // Re-measure on resize (handles Surface Pro zoom / orientation changes)
       window.addEventListener("resize", () => {
-        if (!searchScreen.classList.contains("hidden")) measureLayout();
+        if (!searchScreen.classList.contains("hidden")) {
+          measureLayout();
+          syncModeSlider();
+        }
       });
 
       // ── Boot ──────────────────────────────────────────────────────────

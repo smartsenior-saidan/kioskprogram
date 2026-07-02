@@ -1,7 +1,11 @@
 {
   "permissions": {
     "allow": [
-      "Bash(git -C /Users/linusfujisawa/Desktop/Programming/SmartSenior/KioskProgram log --oneline -20)"
+      "Bash(git -C /Users/linusfujisawa/Desktop/Programming/SmartSenior/KioskProgram log --oneline -20)",
+      "Bash(grep -n \"#[0-9a-fA-F]\\\\{3,6\\\\}\\\\b\" /Users/linusfujisawa/Desktop/Programming/SmartSenior/KioskProgram/admin/css/admin.css)",
+      "Bash(grep -n \"#[0-9a-fA-F]\\\\{3,6\\\\}\\\\|style=\\\\\"color\" /Users/linusfujisawa/Desktop/Programming/SmartSenior/KioskProgram/admin/js/admin.js)",
+      "Bash(node --check /Users/linusfujisawa/Desktop/Programming/SmartSenior/KioskProgram/admin/js/admin.js)",
+      "Bash(python3 -)"
     ]
   }
 }

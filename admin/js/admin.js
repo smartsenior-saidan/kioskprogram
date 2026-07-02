@@ -6,8 +6,6 @@ import {
   auth,
   onAuthStateChanged,
   signOut,
-  ROLE,
-  DISPLAY_NAME,
   doc,
   getDoc,
   addDoc,
@@ -28,7 +26,7 @@ import {
   personMediaCollection,
   personMediaDoc,
 } from "./firebase.js?v=3";
-import { t, getLang, applyStaticI18n, onLangChange } from "./i18n.js?v=10";
+import { t, getLang, setLang, applyStaticI18n, onLangChange } from "./i18n.js?v=14";
 
 // ── State ───────────────────────────────────────────────────────────────────
 
@@ -103,12 +101,10 @@ function showSection(name, opts = {}) {
   const titleEl = document.getElementById("pageTitle");
   if (titleEl) titleEl.textContent = currentPageTitle();
 
-  // Close mobile sidebar
-  document.getElementById("sidebar")?.classList.remove("open");
-
-  // Lazy-load sections
-  if (name === "dashboard") loadDashboard();
-  if (name === "profiles") loadProfileList();
+  // Lazy-load sections. Family/individual share the dashboard's data load,
+  // which populates the recent-profiles table and both member lists.
+  if (name === "dashboard") loadProfileList();
+  if (name === "family" || name === "individual") loadMembers();
 
   // Give this section its own browser-history entry so Back/Forward moves
   // between in-app sections instead of leaving the app. Skipped when we're
@@ -144,7 +140,7 @@ window.addEventListener("popstate", async (e) => {
     }
     if (person) {
       await loadForEdit(person);
-      showSection("new-profile", { activeNav: "profiles", personId: person.id, skipPush: true });
+      showSection("new-profile", { activeNav: "dashboard", personId: person.id, skipPush: true });
       return;
     }
   }
@@ -178,24 +174,15 @@ function clearFormStatus() {
   if (el) el.classList.add("hidden");
 }
 
-// ── Dashboard ────────────────────────────────────────────────────────────────
+// ── Member panels (Family / Individual tabs) ──────────────────────────────────
 
-async function loadDashboard() {
+async function loadMembers() {
   try {
     const personSnap = await getDocs(tenantQuery(COLLECTIONS.persons));
-    const persons = personSnap.docs.map((d) => ({ id: d.id, ...d.data() }));
-    dashboardPersons = persons;
-
-    // Recent profiles (newest first by created_at)
-    const sorted = [...persons].sort((a, b) => {
-      const at = a.created_at?.seconds ?? 0;
-      const bt = b.created_at?.seconds ?? 0;
-      return bt - at;
-    });
-    renderRecentProfiles(sorted.slice(0, 5));
+    dashboardPersons = personSnap.docs.map((d) => ({ id: d.id, ...d.data() }));
     renderFamilyIndividualPanel();
   } catch (err) {
-    console.error("[dashboard] load failed:", err);
+    console.error("[members] load failed:", err);
     if (err.message?.includes("index")) {
       setStatus(t("status.indexNeeded"), "error");
     }
@@ -235,21 +222,28 @@ function renderFamilyIndividualPanel() {
     if (!familyGroups.has(key)) familyGroups.set(key, []);
     familyGroups.get(key).push(p);
   }
-  const familyRows = [...familyGroups.entries()]
+  const familyGroupHtml = [...familyGroups.entries()]
     .sort((a, b) => a[0].localeCompare(b[0]))
     .map(([lastName, members]) => `
-      <tr data-last-name="${lastName}">
-        <td>${lastName}家</td>
-        <td>${members.length}${t("fi.peopleSuffix")}</td>
-      </tr>`)
+      <div class="fi-family-group">
+        <button type="button" class="fi-family-header" data-last-name="${lastName}">
+          <span class="fi-family-name">${lastName}家</span>
+          <span class="fi-family-count">${members.length}${t("fi.peopleSuffix")}</span>
+          <span class="fi-family-chevron">›</span>
+        </button>
+        <div class="fi-family-members">
+          ${members
+            .map((m) => `
+              <button type="button" class="fi-member-row" data-id="${m.id}">
+                <span>${m.last_name || ""} ${m.first_name || ""}</span>
+                <span>${m.plot || "—"}</span>
+              </button>`)
+            .join("")}
+        </div>
+      </div>`)
     .join("");
 
-  familyEl.innerHTML = familyRows
-    ? `<table class="mini-table">
-         <thead><tr><th>${t("fi.familyCol")}</th><th>${t("fi.membersCol")}</th></tr></thead>
-         <tbody>${familyRows}</tbody>
-       </table>`
-    : `<p class="empty-state">${t("empty.noProfiles")}</p>`;
+  familyEl.innerHTML = familyGroupHtml || `<p class="empty-state">${t("empty.noProfiles")}</p>`;
 
   const individualRow = (p) => `
     <tr data-id="${p.id}">
@@ -264,19 +258,20 @@ function renderFamilyIndividualPanel() {
        </table>`
     : `<p class="empty-state">${t("empty.noProfiles")}</p>`;
 
-  // Clicking a family row jumps to Profiles filtered to that surname, showing
-  // every member of the family. showSection() kicks off an async reload of
-  // allProfiles — the filter has to be applied *after* that reload finishes,
-  // or the reload's unfiltered render overwrites it.
-  familyEl.querySelectorAll("tr[data-last-name]").forEach((tr) => {
-    tr.style.cursor = "pointer";
-    tr.addEventListener("click", async () => {
-      showSection("profiles");
-      await loadProfileList();
-      const search = document.getElementById("profileSearch");
-      if (search) {
-        search.value = tr.dataset.lastName;
-        search.dispatchEvent(new Event("input", { bubbles: true }));
+  // Clicking a family header expands it in place to show each member —
+  // clicking a member opens that person's own profile directly.
+  familyEl.querySelectorAll(".fi-family-header").forEach((header) => {
+    header.addEventListener("click", () => {
+      header.closest(".fi-family-group")?.classList.toggle("expanded");
+    });
+  });
+
+  familyEl.querySelectorAll(".fi-member-row").forEach((row) => {
+    row.addEventListener("click", () => {
+      const person = dashboardPersons.find((p) => p.id === row.dataset.id);
+      if (person) {
+        loadForEdit(person);
+        showSection("new-profile", { activeNav: "dashboard" });
       }
     });
   });
@@ -288,44 +283,10 @@ function renderFamilyIndividualPanel() {
       const person = dashboardPersons.find((p) => p.id === tr.dataset.id);
       if (person) {
         loadForEdit(person);
-        showSection("new-profile", { activeNav: "profiles" });
+        showSection("new-profile", { activeNav: "dashboard" });
       }
     });
   });
-}
-
-// ── Recent profiles (dashboard) ────────────────────────────────────────────────
-
-function renderRecentProfiles(persons) {
-  const wrap = document.getElementById("recentProfiles");
-  if (!wrap) return;
-
-  if (!persons.length) {
-    wrap.innerHTML = `<p class="empty-state">${t("empty.noProfilesCreate")}</p>`;
-    wireNavButtons(wrap);
-    return;
-  }
-
-  wrap.innerHTML = `
-    <div class="profiles-table-wrap">
-      <table class="profiles-table">
-        <thead>
-          <tr>
-            <th>${t("table.lastName")}</th>
-            <th>${t("table.firstName")}</th>
-            <th>${t("table.passed")}</th>
-            <th>${t("table.section")}</th>
-            <th>${t("table.row")}</th>
-            <th>${t("table.actions")}</th>
-          </tr>
-        </thead>
-        <tbody>
-          ${persons.map((p) => profileRow(p, true)).join("")}
-        </tbody>
-      </table>
-    </div>`;
-
-  wireProfileActions(wrap, persons);
 }
 
 // ── Full profile list ─────────────────────────────────────────────────────────
@@ -472,7 +433,7 @@ function wireProfileActions(container, localProfiles) {
       const person = pool.find((p) => p.id === id);
 
       if (action === "qr"     && person) showQrModal(person);
-      if (action === "edit"   && person) { loadForEdit(person); showSection("new-profile", { activeNav: "profiles", personId: person.id }); }
+      if (action === "edit"   && person) { loadForEdit(person); showSection("new-profile", { activeNav: "dashboard", personId: person.id }); }
       if (action === "delete" && person) await deleteProfile(person);
     });
   });
@@ -546,6 +507,7 @@ function readForm() {
     first_name_kana: get("firstNameKana"),
     last_name_kana: get("lastNameKana"),
     kaimyo: get("kaimyo"),
+    seshu_name: get("seshuName"),
     birth_date: get("birthDate"),
     death_date: get("deathDate"),
     plot_section: section,
@@ -727,8 +689,7 @@ async function handleSave(e) {
 
     setStatus(t("status.savedToast", { name: `${data.first_name} ${data.last_name}` }), "success");
     resetForm();
-    await loadProfileList();
-    showSection("profiles");
+    showSection("dashboard");
   } catch (err) {
     console.error("[admin] save failed:", err);
     setFormStatus(t("status.saveFailed", { msg: err.message || err }), "error");
@@ -776,6 +737,7 @@ async function loadForEdit(person) {
   set("firstNameKana",  person.first_name_kana);
   set("lastNameKana",   person.last_name_kana);
   set("kaimyo",         person.kaimyo || person.posthumous_name);
+  set("seshuName",      person.seshu_name);
   set("birthDate",      person.birth_date);
   set("deathDate",      person.death_date);
   set("plotSection",    person.plot_section);
@@ -857,7 +819,7 @@ async function deleteProfile(person) {
     setStatus(t("status.deletedToast", { name: `${person.first_name} ${person.last_name}` }), "success");
     allProfiles = allProfiles.filter((p) => p.id !== person.id);
     renderProfileTable(allProfiles);
-    loadDashboard();
+    dashboardPersons = dashboardPersons.filter((p) => p.id !== person.id);
   } catch (err) {
     console.error("[admin] delete failed:", err);
     setStatus(t("status.deleteFailed", { msg: err.message }), "error");
@@ -1044,18 +1006,18 @@ function setText(id, value) {
   if (el) el.textContent = value;
 }
 
-function wireNavButtons(container) {
-  container.querySelectorAll("[data-section]").forEach((el) => {
-    el.addEventListener("click", () => showSection(el.dataset.section));
-  });
-}
-
 // ── Language ─────────────────────────────────────────────────────────────────
+
+function syncLangButtons() {
+  document.querySelectorAll("#langSwitch [data-lang]").forEach((b) =>
+    b.classList.toggle("active", b.dataset.lang === getLang())
+  );
+}
 
 /** Re-translate everything that JS rendered when the language changes. */
 function retranslateDynamic() {
+  syncLangButtons();
   setText("pageTitle", currentPageTitle());
-  setText("sidebarRole", ROLE === "superadmin" ? t("role.superadmin") : t("role.admin"));
 
   // Form chrome reflects whether we're editing
   const saveBtn = document.getElementById("saveBtn");
@@ -1068,8 +1030,8 @@ function retranslateDynamic() {
   }
 
   // Re-render data views currently on screen
-  if (currentSection === "dashboard") loadDashboard();
-  if (currentSection === "profiles") renderProfileTable(allProfiles);
+  if (currentSection === "dashboard") renderProfileTable(allProfiles);
+  if (currentSection === "family" || currentSection === "individual") renderFamilyIndividualPanel();
 }
 
 // ── Bootstrap ────────────────────────────────────────────────────────────────
@@ -1089,15 +1051,24 @@ export function initAdminPortal() {
     window.location.href = "login.html";
   });
 
-  // Language: apply saved choice (no in-app switch — set once via i18n.js)
+  // Language: apply saved choice + wire the EN / 日本語 switch
   document.documentElement.lang = getLang();
   applyStaticI18n();
+  syncLangButtons();
+  document.getElementById("langSwitch")?.addEventListener("click", (e) => {
+    const btn = e.target.closest("[data-lang]");
+    if (!btn || btn.dataset.lang === getLang()) return;
+    setLang(btn.dataset.lang);
+  });
   onLangChange(retranslateDynamic);
 
-  // Sidebar user info
-  setText("tenantBadge", TENANT_ID);
-  setText("sidebarUser", DISPLAY_NAME);
-  setText("sidebarRole", ROLE === "superadmin" ? t("role.superadmin") : t("role.admin"));
+  // Rail tenant badge — full name visible; title attr as a native fallback
+  // tooltip if the name is too long to fit and gets visually truncated.
+  const tenantEl = document.getElementById("tenantBadge");
+  if (tenantEl) {
+    tenantEl.textContent = TENANT_ID;
+    tenantEl.title = TENANT_ID;
+  }
 
   // Sidebar nav
   document.querySelectorAll("[data-section]").forEach((el) => {
@@ -1105,11 +1076,6 @@ export function initAdminPortal() {
       if (el.dataset.section === "new-profile") resetForm();
       showSection(el.dataset.section);
     });
-  });
-
-  // Mobile sidebar toggle
-  document.getElementById("menuToggle")?.addEventListener("click", () => {
-    document.getElementById("sidebar")?.classList.toggle("open");
   });
 
   // Profiles section "New Profile" button
@@ -1132,9 +1098,8 @@ export function initAdminPortal() {
   document.getElementById("familySearchInput")?.addEventListener("input", renderFamilyIndividualPanel);
   document.getElementById("individualSearchInput")?.addEventListener("input", renderFamilyIndividualPanel);
 
-  // Form submit / reset
+  // Form submit
   document.getElementById("profileForm")?.addEventListener("submit", handleSave);
-  document.getElementById("resetBtn")?.addEventListener("click", resetForm);
 
   // Cover photo dropzone
   const dropzoneCover = document.getElementById("dropzoneCover");
@@ -1204,6 +1169,6 @@ export function initAdminPortal() {
   }).catch(() => {});
   initFamilyPicker();
 
-  // Load initial section
-  showSection("dashboard");
+  // Load initial section — land on New Profile rather than the dashboard.
+  showSection("new-profile");
 }
