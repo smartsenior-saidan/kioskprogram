@@ -21,10 +21,6 @@ function getPersonId() {
   return getParam('person') || sessionStorage.getItem('kiosk_person');
 }
 
-function getViewMode() {
-  return getParam('view') || sessionStorage.getItem('kiosk_view');
-}
-
 // ── Japanese date / number formatting ──────────────────────────────────────
 
 const KANJI_DIGITS = ['〇','一','二','三','四','五','六','七','八','九'];
@@ -164,10 +160,10 @@ function show(id)  { document.getElementById(id)?.classList.remove('hidden'); }
 function hide(id)  { document.getElementById(id)?.classList.add('hidden'); }
 
 /** Wire the top "Back" / "End Visit" controls (shared by both render modes). */
-function wireNav(ja) {
+function wireNav() {
   const backBtn = document.getElementById('pnavBack');
   if (backBtn) {
-    backBtn.textContent = ja ? '◀ 戻る' : '◀ Back';
+    backBtn.textContent = '◀ 戻る';
     backBtn.addEventListener('click', () => {
       const via = new URLSearchParams(window.location.search).get('via');
       const personId = new URLSearchParams(window.location.search).get('person');
@@ -184,25 +180,17 @@ function wireNav(ja) {
   }
   const endBtn = document.getElementById('pnavEnd');
   if (endBtn) {
-    endBtn.textContent = ja ? '参拝終了' : 'End Visit';
+    endBtn.textContent = '参拝終了';
     endBtn.addEventListener('click', () => { window.location.href = `thankyou.html?site=${window.__ENV__.TENANT_ID}`; });
   }
 }
 
 /** A premade presentation URL — show it full-screen in an embedded frame. */
 function renderEmbed(person) {
-  const lang = sessionStorage.getItem('kiosk_lang') || 'ja';
-  const ja   = lang !== 'en';
-  document.body.classList.toggle('lang-ja', ja);
-  document.body.classList.toggle('lang-en', !ja);
-  document.documentElement.lang = lang;
-
-  const displayName = ja
-    ? `${person.last_name || ''}${person.first_name || ''}`.trim()
-    : `${person.first_name || ''} ${person.last_name || ''}`.trim();
+  const displayName = `${person.last_name || ''}${person.first_name || ''}`.trim();
   document.title = `${displayName.replace('　', ' ')} — SmartSenior`;
 
-  wireNav(ja);
+  wireNav();
 
   const frame = document.getElementById('pEmbedFrame');
   if (frame) frame.src = person.presentation_url;
@@ -210,20 +198,12 @@ function renderEmbed(person) {
 }
 
 function renderPerson(person, media) {
-  const lang   = sessionStorage.getItem('kiosk_lang') || 'ja';
-  const ja     = lang !== 'en';
   const photos  = media.filter((m) => m.file_type === 'photo' && m.storage_url);
   const videos  = media.filter((m) => m.file_type === 'video' && m.storage_url);
   const audios  = media.filter((m) => m.file_type === 'audio' && m.storage_url);
 
-  document.body.classList.toggle('lang-ja', ja);
-  document.body.classList.toggle('lang-en', !ja);
-  document.documentElement.lang = lang;
-
   // Name
-  const displayName = ja
-    ? `${person.last_name || ''}${person.first_name || ''}`.trim()
-    : `${person.first_name || ''} ${person.last_name || ''}`.trim();
+  const displayName = `${person.last_name || ''}${person.first_name || ''}`.trim();
   document.title = `${displayName.replace('　', ' ')} — SmartSenior`;
   set('pName', displayName);
 
@@ -232,20 +212,20 @@ function renderPerson(person, media) {
   if (kaimyo) { set('pKaimyo', kaimyo); show('pKaimyo'); }
 
   // Top controls
-  wireNav(ja);
+  wireNav();
 
   // Death date
   if (person.death_date) {
-    set('pDeathLabel', ja ? '没日' : 'Passed');
-    set('pDeathDate', ja ? toEraDate(person.death_date) : person.death_date);
+    set('pDeathLabel', '没日');
+    set('pDeathDate', toEraDate(person.death_date));
     show('pDeathBlock');
   }
 
   // Age at death
   const age = computeAge(person.birth_date, person.death_date);
   if (age != null) {
-    set('pAgeLabel', ja ? '享年' : 'Age');
-    set('pAge', ja ? `${toKanji(age)}歳` : String(age));
+    set('pAgeLabel', '享年');
+    set('pAge', `${toKanji(age)}歳`);
     show('pAgeBlock');
   }
 
@@ -299,35 +279,28 @@ function renderPerson(person, media) {
 
   // Biography (in an elegant overlay)
   if (person.biography) {
-    set('pBioLabel', ja ? 'ご略歴' : 'Biography');
+    set('pBioLabel', 'メッセージ');
     set('pBio', person.biography);
     const toggle = document.getElementById('pBioToggle');
     if (toggle) {
-      toggle.textContent = ja ? 'ご略歴を読む' : 'Read biography';
+      toggle.textContent = 'メッセージを読む';
       toggle.classList.remove('hidden');
     }
     show('pBottom');
     const overlay = document.getElementById('pBioOverlay');
     const close   = document.getElementById('pBioClose');
-    if (close) close.textContent = ja ? '閉じる' : 'Close';
+    if (close) close.textContent = '閉じる';
     toggle?.addEventListener('click', () => overlay?.classList.remove('hidden'));
     close?.addEventListener('click', () => overlay?.classList.add('hidden'));
     overlay?.addEventListener('click', (e) => {
       if (e.target === overlay) overlay.classList.add('hidden');
     });
   }
-
-  // If arriving via "区画へ案内", flash the plot block
-  if (getViewMode() === 'plot') {
-    document.getElementById('pPlotBlock')?.classList.add('m-info-highlight');
-  }
 }
 
 // ── Bootstrap ─────────────────────────────────────────────────────────────
 
 export async function initProfileScreen() {
-  const lang     = sessionStorage.getItem('kiosk_lang') || 'ja';
-  const ja       = lang !== 'en';
   const loader   = document.getElementById('loader');
   const personId = getPersonId();
 
@@ -338,19 +311,19 @@ export async function initProfileScreen() {
     document.body.insertAdjacentHTML('beforeend', `
       <div class="p-error">
         <p>${msg}</p>
-        <a href="index.html">${ja ? '← 検索に戻る' : '← Return to search'}</a>
+        <a href="index.html">← 検索に戻る</a>
       </div>`);
   };
 
   if (!personId) {
-    errorScreen(ja ? 'ご遺族の情報が指定されていません。' : 'No memorial specified.');
+    errorScreen('ご遺族の情報が指定されていません。');
     return;
   }
 
   try {
     const person = await getPersonById(personId);
     if (!person) {
-      errorScreen(ja ? 'ご遺族の記録が見つかりませんでした。' : 'This memorial could not be found.');
+      errorScreen('ご遺族の記録が見つかりませんでした。');
       return;
     }
 
@@ -371,7 +344,7 @@ export async function initProfileScreen() {
 
   } catch (err) {
     console.error('[profile] failed:', err);
-    errorScreen(ja ? '読み込みに失敗しました。' : 'Something went wrong.');
+    errorScreen('読み込みに失敗しました。');
   } finally {
     if (loader) loader.classList.add('hidden');
   }

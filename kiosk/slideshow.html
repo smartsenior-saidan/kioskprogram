@@ -15,7 +15,7 @@
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
     <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Shippori+Mincho:wght@400;500;600;700;800&display=swap" />
-    <link rel="stylesheet" href="css/kiosk.css?v=20" />
+    <link rel="stylesheet" href="css/kiosk.css?v=36" />
     <script src="js/config.js"></script>
     <style>
       /* ── Slideshow nav bar ─────────────────────────────────────────────── */
@@ -25,7 +25,6 @@
         height: 88px;
         display: flex;
         align-items: center;
-        justify-content: space-between;
         padding: 0 32px;
         background: rgba(250, 249, 246, 0.9);
         backdrop-filter: blur(14px);
@@ -35,35 +34,21 @@
         gap: 16px;
       }
 
-      .sld-nav-btn {
-        height: 56px;
-        min-width: 140px;
-        padding: 0 24px;
-        font-size: 1.05rem;
-        font-weight: 600;
-        color: var(--color-text);
-        background: #fff;
-        border: 1.5px solid var(--color-border);
-        border-radius: 14px;
-        box-shadow: 0 2px 8px rgba(0,0,0,0.07);
-        cursor: pointer;
-        transition: background 0.12s ease, opacity 0.12s ease;
-        flex-shrink: 0;
-      }
-      .sld-nav-btn:disabled { opacity: 0.3; cursor: default; }
-      .sld-nav-btn:not(:disabled):active { background: rgba(0,0,0,0.05); }
-
       .sld-counter {
-        flex: 1;
-        text-align: center;
+        margin-left: auto;
         font-size: 1.1rem;
         font-weight: 500;
         color: var(--color-text-muted);
         letter-spacing: 0.05em;
       }
 
-      .sld-details-btn {
+      /* Centered in the nav bar regardless of the counter's width on the right */
+      .sld-stop-btn {
+        position: absolute;
+        left: 50%;
+        transform: translateX(-50%);
         height: 56px;
+        min-width: 140px;
         padding: 0 28px;
         font-size: 1.05rem;
         font-weight: 600;
@@ -75,7 +60,13 @@
         transition: background 0.12s ease;
         flex-shrink: 0;
       }
-      .sld-details-btn:active { filter: brightness(0.9); }
+      .sld-stop-btn:active { filter: brightness(0.9); }
+      .sld-stop-btn.is-paused {
+        background: #fff;
+        color: var(--color-text);
+        border: 1.5px solid var(--color-border);
+        box-shadow: 0 2px 8px rgba(0,0,0,0.07);
+      }
 
       /* Move back button to top-left (profile default is bottom-left) */
       .slideshow-page .m-btn-back {
@@ -132,10 +123,8 @@
 
     <!-- Bottom navigation bar -->
     <div class="sld-nav" id="sldNav" style="display:none">
-      <button class="sld-nav-btn" id="sldPrev">◀ 前の方</button>
-      <span class="sld-counter"   id="sldCounter">1 / 1</span>
-      <button class="sld-details-btn" id="sldDetails">詳細を見る</button>
-      <button class="sld-nav-btn" id="sldNext">次の方 ▶</button>
+      <button class="sld-stop-btn" id="sldStop">停止</button>
+      <span class="sld-counter" id="sldCounter">1 / 1</span>
     </div>
 
     <script type="module">
@@ -204,8 +193,9 @@
       let currentIndex  = 0;
       const mediaCache  = {};
       let autoTimer     = null;
+      let autoPlaying   = true;
       let isAnimating   = false;
-      const AUTO_MS     = 5000;
+      const AUTO_MS     = 10000;
       const FADE_OUT_MS = 400;
       const FADE_IN_MS  = 900;
       let tenantBgUrl   = null; // saved after applyTenantBackground resolves
@@ -221,13 +211,6 @@
           document.body.classList.remove('has-tenant-bg');
         }
       }
-
-      const lang = sessionStorage.getItem('kiosk_lang') || 'ja';
-      const ja   = lang !== 'en';
-
-      document.body.classList.toggle('lang-ja', ja);
-      document.body.classList.toggle('lang-en', !ja);
-      document.documentElement.lang = lang;
 
       // ── Media loader ─────────────────────────────────────────────────────
 
@@ -250,9 +233,7 @@
         const photos = media.filter(m => m.file_type === 'photo' && m.storage_url);
 
         // Name
-        const name = ja
-          ? `${person.last_name || ''}${person.first_name || ''}`.trim()
-          : `${person.first_name || ''} ${person.last_name || ''}`.trim();
+        const name = `${person.last_name || ''}${person.first_name || ''}`.trim();
         set('pName', name);
 
         // Kaimyo
@@ -262,25 +243,18 @@
 
         // Death date
         if (person.death_date) {
-          set('pDeathLabel', ja ? '没日' : 'Passed');
-          set('pDeathDate', ja ? toEraDate(person.death_date) : person.death_date);
+          set('pDeathLabel', '没日');
+          set('pDeathDate', toEraDate(person.death_date));
           show('pDeathBlock');
         } else hide('pDeathBlock');
 
         // Age
         const age = computeAge(person.birth_date, person.death_date);
         if (age != null) {
-          set('pAgeLabel', ja ? '享年' : 'Age');
-          set('pAge', ja ? `${toKanji(age)}歳` : String(age));
+          set('pAgeLabel', '享年');
+          set('pAge', `${toKanji(age)}歳`);
           show('pAgeBlock');
         } else hide('pAgeBlock');
-
-        // Plot
-        if (person.plot) {
-          set('pPlotLabel', ja ? '区画' : 'Plot');
-          set('pPlot', person.plot);
-          show('pPlotBlock');
-        } else hide('pPlotBlock');
 
         // Photos
         document.getElementById('pSlides').innerHTML = '';
@@ -320,20 +294,29 @@
 
       function startAuto() {
         clearInterval(autoTimer);
+        if (!autoPlaying) return;
         autoTimer = setInterval(() => {
           const next = (currentIndex + 1) % members.length;
           goTo(next);
         }, AUTO_MS);
       }
 
+      function stopAuto() {
+        clearInterval(autoTimer);
+        autoTimer = null;
+      }
+
+      function updateStopBtn() {
+        const btn = document.getElementById('sldStop');
+        if (!btn) return;
+        btn.textContent = autoPlaying ? '停止' : '再開';
+        btn.classList.toggle('is-paused', !autoPlaying);
+      }
+
       // ── Navigation ───────────────────────────────────────────────────────
 
       function updateNav() {
-        const prev = document.getElementById('sldPrev');
-        const next = document.getElementById('sldNext');
         const counter = document.getElementById('sldCounter');
-        prev.disabled = currentIndex === 0;
-        next.disabled = currentIndex === members.length - 1;
         counter.textContent = `${currentIndex + 1} / ${members.length}`;
       }
 
@@ -385,37 +368,30 @@
         document.body.insertAdjacentHTML('beforeend', `
           <div class="p-error">
             <p>${msg}</p>
-            <a href="index.html">${ja ? '← 検索に戻る' : '← Return to search'}</a>
+            <a href="index.html">← 検索に戻る</a>
           </div>`);
       }
 
       // Back / End Visit
-      document.getElementById('snavBack').textContent = ja ? '◀ 戻る' : '◀ Back';
       document.getElementById('snavBack').addEventListener('click', () => {
         const rootId = personId || '';
         window.location.href = `family.html?person=${rootId}&site=${window.__ENV__.TENANT_ID}`;
       });
 
-      document.getElementById('snavEnd').textContent = ja ? '参拝終了' : 'End Visit';
       document.getElementById('snavEnd').addEventListener('click', () => {
         window.location.href = `thankyou.html?site=${window.__ENV__.TENANT_ID}`;
       });
 
-      // Slide navigation
-      document.getElementById('sldPrev').addEventListener('click', () => goTo(currentIndex - 1));
-      document.getElementById('sldNext').addEventListener('click', () => goTo(currentIndex + 1));
-
-      document.getElementById('sldDetails').textContent = ja ? '詳細を見る' : 'Full Profile';
-      document.getElementById('sldDetails').addEventListener('click', () => {
-        const person = members[currentIndex];
-        if (person) {
-          window.location.href = `profile.html?person=${person.id}&via=slideshow&site=${window.__ENV__.TENANT_ID}`;
-        }
+      // Stop / resume auto-advance
+      document.getElementById('sldStop').addEventListener('click', () => {
+        autoPlaying = !autoPlaying;
+        updateStopBtn();
+        if (autoPlaying) startAuto(); else stopAuto();
       });
 
       // Load family
       if (!personId) {
-        showError(ja ? 'ご家族の情報が指定されていません。' : 'No family specified.');
+        showError('ご家族の情報が指定されていません。');
       } else {
         (async () => {
           try {
@@ -424,7 +400,7 @@
 
             const root = await getPersonById(personId);
             if (!root) {
-              showError(ja ? '記録が見つかりませんでした。' : 'Memorial not found.');
+              showError('記録が見つかりませんでした。');
               return;
             }
 
@@ -433,7 +409,7 @@
             members        = snaps.filter(s => s.exists()).map(s => ({ id: s.id, ...s.data() }));
 
             if (!members.length) {
-              showError(ja ? 'ご家族の記録が見つかりませんでした。' : 'Family records not found.');
+              showError('ご家族の記録が見つかりませんでした。');
               return;
             }
 
@@ -449,11 +425,12 @@
             if (members.length > 1) {
               document.getElementById('sldNav').style.display = 'flex';
               updateNav();
+              updateStopBtn();
               startAuto();
             }
           } catch (err) {
             console.error('[slideshow]', err);
-            showError(ja ? '読み込みに失敗しました。' : 'Something went wrong.');
+            showError('読み込みに失敗しました。');
           }
         })();
       }

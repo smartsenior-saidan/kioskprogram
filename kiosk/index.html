@@ -24,7 +24,7 @@
       rel="stylesheet"
       href="https://fonts.googleapis.com/css2?family=Shippori+Mincho:wght@400;500;600;700;800&display=swap"
     />
-    <link rel="stylesheet" href="css/kiosk.css?v=20" />
+    <link rel="stylesheet" href="css/kiosk.css?v=36" />
     <!-- Pins this kiosk to its memorial site (tenant). Runs before modules. -->
     <script src="js/config.js"></script>
   </head>
@@ -33,14 +33,6 @@
          HOME SCREEN
          ═══════════════════════════════════════════════════ -->
     <div id="screen-home" class="screen screen-home">
-      <!-- Language switcher — top right -->
-      <div class="home-lang-wrap">
-        <div class="lang-switcher" id="homeLangSwitcher">
-          <button class="lang-btn active" data-lang="ja">日本語</button>
-          <button class="lang-btn" data-lang="en">English</button>
-        </div>
-      </div>
-
       <div class="home-greeting">
         <p class="home-greeting-main" data-i18n="greetingMain"></p>
         <p class="home-greeting-sub" data-i18n="greetingSub"></p>
@@ -92,6 +84,12 @@
           id="searchButton"
           data-i18n="searchBtn"
         ></button>
+
+        <!-- Family vs individual result mode -->
+        <div class="mode-switcher" id="searchModeSwitcher">
+          <button class="mode-btn active" data-mode="family">家族</button>
+          <button class="mode-btn" data-mode="individual">個人</button>
+        </div>
       </div>
 
       <!-- Body: keyboard (left) + results (right) -->
@@ -135,58 +133,30 @@
 
       // ── Translations ──────────────────────────────────────────────────
       const STRINGS = {
-        ja: {
-          greetingMain:
-            "ご来館ありがとうございます。\n電子墓誌をご案内いたします。",
-          greetingSub:
-            "お名前を検索して、お写真・ご略歴・ご命日をご覧ください。",
-          startBtn: "氏名で検索",
-          startHint: "納骨場所の番号もご確認いただけます",
-          icNote: "※ ICカードをお持ちの方はカードリーダーにかざしてください",
-          backBtn: "◀ 戻る",
-          searchTitle: "名前検索（姓 → 名と入力）",
-          searchSub: "姓のみ・名のみ・途中までの入力でも検索できます",
-          endVisit: "参拝終了",
-          searchPlaceholder: "こちらに名前が表示されます…",
-          searchBtn: "検索",
-          spaceBtn: "スペース",
-          clearAllBtn: "全消去",
-          noResults:
-            "該当する方が見つかりませんでした。<br>別のお名前や姓のみでお試しください。",
-          unavailable: "現在検索を利用できません。",
-        },
-        en: {
-          greetingMain: "Welcome.",
-          greetingSub:
-            "Search by name to view photos, biographies, and memorial details.",
-          startBtn: "Search by Name",
-          startHint: "Plot location numbers are also available.",
-          icNote: "※ IC card holders: hold your card over the reader.",
-          backBtn: "◀ Back",
-          searchTitle: "Search by Name",
-          searchSub:
-            "You may search by last name, first name, or partial spelling.",
-          endVisit: "End Visit",
-          searchPlaceholder: "Name will appear here…",
-          searchBtn: "Search",
-          spaceBtn: "Space",
-          clearAllBtn: "Clear",
-          noResults: "No matches found. Try searching by last name only.",
-          unavailable: "Search is unavailable right now.",
-        },
+        greetingMain: "ご来館ありがとうございます。",
+        greetingSub:
+          "お名前を検索して、お写真・ご略歴・ご命日をご覧ください。",
+        startBtn: "氏名で検索",
+        startHint: "納骨場所の番号もご確認いただけます",
+        icNote: "※ ICカードをお持ちの方は\nカードリーダーにかざしてください",
+        backBtn: "◀ 戻る",
+        searchTitle: "名前検索（姓 → 名と入力）",
+        searchSub: "姓のみ・名のみ・途中までの入力でも検索できます",
+        endVisit: "参拝終了",
+        searchPlaceholder: "こちらに名前が表示されます…",
+        searchBtn: "検索",
+        spaceBtn: "スペース",
+        clearAllBtn: "全消去",
+        noResults:
+          "該当する方が見つかりませんでした。<br>別のお名前や姓のみでお試しください。",
+        unavailable: "現在検索を利用できません。",
       };
 
-      // ── Language state ────────────────────────────────────────────────
-      let currentLang = sessionStorage.getItem("kiosk_lang") || "ja";
-
       function t(key) {
-        return STRINGS[currentLang][key] || STRINGS["ja"][key] || key;
+        return STRINGS[key] || key;
       }
 
-      function applyLang() {
-        document.documentElement.lang = currentLang;
-        sessionStorage.setItem("kiosk_lang", currentLang);
-
+      function applyText() {
         // Update all data-i18n elements
         document.querySelectorAll("[data-i18n]").forEach((el) => {
           const key = el.dataset.i18n;
@@ -197,13 +167,7 @@
         document.getElementById("searchInput").placeholder =
           t("searchPlaceholder");
 
-        // Highlight active lang button
-        document.querySelectorAll(".lang-btn").forEach((btn) => {
-          btn.classList.toggle("active", btn.dataset.lang === currentLang);
-        });
-
-        // Rebuild keyboard for the new language
-        buildKeyboard(currentLang);
+        buildKeyboard();
       }
 
       // ── Keyboard layouts ──────────────────────────────────────────────
@@ -262,29 +226,14 @@
         ほ: "ぽ",
       };
 
-      const KB_QWERTY_ROWS = [
-        ["Q", "W", "E", "R", "T", "Y", "U", "I", "O", "P"],
-        ["A", "S", "D", "F", "G", "H", "J", "K", "L", null],
-        ["Z", "X", "C", "V", "B", "N", "M", null, null, null],
-        ["1", "2", "3", "4", "5", "6", "7", "8", "9", "0"],
-      ];
-
-      const KB_QWERTY_SPECIAL = [
-        { type: "action", action: "bs", label: "⌫" },
-        { type: "empty" },
-        { type: "action", action: "left", label: "←" },
-        { type: "action", action: "right", label: "→" },
-      ];
-
-      function buildKeyboard(lang) {
+      function buildKeyboard() {
         const grid = document.getElementById("kbMain");
         const special = document.getElementById("kbSpecial");
         grid.innerHTML = "";
         special.innerHTML = "";
 
-        const rows = lang === "en" ? KB_QWERTY_ROWS : KB_HIRAGANA_ROWS;
-        const specialDefs =
-          lang === "en" ? KB_QWERTY_SPECIAL : KB_HIRAGANA_SPECIAL;
+        const rows = KB_HIRAGANA_ROWS;
+        const specialDefs = KB_HIRAGANA_SPECIAL;
 
         // Set column count via inline style so grid adapts
         const colCount = rows[0].length;
@@ -391,7 +340,7 @@
       document.getElementById("kbSpace").addEventListener("click", () => {
         const pos = getCaretPos();
         const val = input.value;
-        const sp = currentLang === "ja" ? "　" : " "; // full-width for JP
+        const sp = "　"; // full-width space
         input.value = val.slice(0, pos) + sp + val.slice(pos);
         setCaretPos(pos + 1);
         input.dispatchEvent(new Event("input", { bubbles: true }));
@@ -455,24 +404,13 @@
       document.getElementById("startBtn").addEventListener("click", showSearch);
       document.getElementById("backBtn").addEventListener("click", showHome);
 
-      // ── Language switcher (home screen only) ─────────────────────────
-      function handleLangClick(e) {
-        const btn = e.target.closest("[data-lang]");
-        if (!btn || btn.dataset.lang === currentLang) return;
-        currentLang = btn.dataset.lang;
-        applyLang();
-      }
-      document
-        .getElementById("homeLangSwitcher")
-        .addEventListener("click", handleLangClick);
-
       // Re-measure on resize (handles Surface Pro zoom / orientation changes)
       window.addEventListener("resize", () => {
         if (!searchScreen.classList.contains("hidden")) measureLayout();
       });
 
       // ── Boot ──────────────────────────────────────────────────────────
-      applyLang();
+      applyText();
       initSearchScreen();
 
       // Page is invisible (bg-loading opacity:0) until this resolves.

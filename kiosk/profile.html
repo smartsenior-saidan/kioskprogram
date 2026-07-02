@@ -12,7 +12,7 @@
     <link rel="apple-touch-icon" href="icons/apple-touch-icon.png" />
     <meta name="theme-color" content="#0071e3" />
     <link rel="stylesheet" href="css/style.css?v=3" />
-    <link rel="stylesheet" href="css/kiosk.css?v=20" />
+    <link rel="stylesheet" href="css/kiosk.css?v=36" />
     <!-- Pins this kiosk to its memorial site (tenant). Runs before modules. -->
     <script src="js/config.js"></script>
   </head>
@@ -73,7 +73,7 @@
 
     <!-- ── Bottom bar: audio player + memorial video + biography toggle ── -->
     <div class="m-bottom hidden" id="pBottom">
-      <button class="m-link hidden" id="pBioToggle">ご略歴を読む</button>
+      <button class="m-link hidden" id="pBioToggle">メッセージを読む</button>
       <div class="m-audio-wrap hidden" id="pAudioWrap">
         <audio id="pAudio" controls preload="metadata"></audio>
       </div>
@@ -91,7 +91,7 @@
     <!-- ── Biography overlay ── -->
     <div class="m-bio-overlay hidden" id="pBioOverlay">
       <div class="m-bio-card">
-        <h2 class="m-bio-title" id="pBioLabel">ご略歴</h2>
+        <h2 class="m-bio-title" id="pBioLabel">メッセージ</h2>
         <p class="m-bio-text" id="pBio"></p>
         <button class="m-bio-close" id="pBioClose">閉じる</button>
       </div>

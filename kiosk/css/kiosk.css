@@ -35,45 +35,8 @@ body.bg-loading {
   -ms-overflow-style: none;
   scrollbar-width: none;
 }
-.kiosk-scroll::-webkit-scrollbar { display: none; }
-
-/* ============================================================
-   LANGUAGE SWITCHER — inline in search topbar
-   ============================================================ */
-
-.lang-switcher {
-  display: flex;
-  background: rgba(0, 0, 0, 0.05);
-  border: 1px solid var(--color-border);
-  border-radius: 10px;
-  padding: 3px;
-  gap: 3px;
-}
-
-.lang-btn {
-  min-height: unset;
-  min-width: unset;
-  height: 40px;
-  padding: 0 18px;
-  font-size: 0.9rem;
-  font-weight: 600;
-  color: var(--color-text-muted);
-  background: transparent;
-  border: none;
-  border-radius: 9px;
-  cursor: pointer;
-  transition: background 0.15s ease, color 0.15s ease;
-  letter-spacing: 0.2px;
-}
-
-.lang-btn.active {
-  background: var(--color-text);
-  color: #fff;
-}
-
-.lang-btn:not(.active):hover {
-  background: rgba(0,0,0,0.06);
-  color: var(--color-text);
+.kiosk-scroll::-webkit-scrollbar {
+  display: none;
 }
 
 /* ============================================================
@@ -104,16 +67,8 @@ body.bg-loading {
   justify-content: center;
   text-align: center;
   padding: clamp(48px, 7vh, 80px) clamp(24px, 6vw, 72px);
-  padding-bottom: clamp(80px, 10vh, 120px);
   background: #fff;
   gap: clamp(10px, 2.5vh, 28px);
-}
-
-/* Language switcher — pinned top right */
-.home-lang-wrap {
-  position: absolute;
-  top: clamp(16px, 2.5vh, 32px);
-  right: clamp(20px, 3vw, 40px);
 }
 
 /* Welcome text */
@@ -122,7 +77,6 @@ body.bg-loading {
   flex-direction: column;
   gap: clamp(10px, 1.8vh, 20px);
 }
-
 
 .home-greeting-main {
   font-size: clamp(1.7rem, 4.2vw, 2.8rem);
@@ -134,7 +88,7 @@ body.bg-loading {
 }
 
 .home-greeting-sub {
-  font-size: clamp(1rem, 1.8vw, 1.5rem);
+  font-size: clamp(1.3rem, 2.4vw, 2rem);
   color: var(--color-text-muted);
   line-height: 1.6;
   max-width: 56ch;
@@ -143,10 +97,10 @@ body.bg-loading {
 
 /* Start button */
 .home-start-btn {
-  width: min(420px, 85%);
+  width: min(460px, 85%);
   min-width: unset;
-  height: clamp(68px, 8.5vh, 88px);
-  font-size: clamp(1.2rem, 2.4vw, 1.6rem);
+  height: clamp(78px, 10vh, 104px);
+  font-size: clamp(1.5rem, 3vw, 2.1rem);
   font-weight: 700;
   border-radius: 22px;
   letter-spacing: 0.5px;
@@ -155,21 +109,23 @@ body.bg-loading {
 }
 
 .home-start-hint {
-  font-size: clamp(0.85rem, 1.2vw, 1rem);
+  font-size: clamp(1.1rem, 1.6vw, 1.3rem);
   color: var(--color-text-muted);
   max-width: 52ch;
   margin: 0;
 }
 
-/* IC card note at bottom */
+/* IC card reader note — large, bold callout centered with the rest of the
+   home screen content (not pinned to the edge, so it reads as a primary option). */
 .home-ic-note {
-  position: absolute;
-  bottom: clamp(24px, 3.5vh, 44px);
-  left: 0; right: 0;
   text-align: center;
-  font-size: clamp(0.85rem, 1.1vw, 1.05rem);
-  color: var(--color-text-muted);
-  padding: 0 clamp(24px, 4vw, 60px);
+  white-space: pre-line;
+  line-height: 1.5;
+  font-size: clamp(1.3rem, 2.8vw, 2rem);
+  font-weight: 700;
+  color: var(--color-text);
+  padding: 0 clamp(24px, 4vw, 48px);
+  max-width: 70ch;
   margin: 0;
 }
 
@@ -183,7 +139,7 @@ body.has-tenant-bg {
 
 /* Full-bleed background layer behind everything */
 body.has-tenant-bg::before {
-  content: '';
+  content: "";
   position: fixed;
   inset: 0;
   z-index: 0;
@@ -194,7 +150,9 @@ body.has-tenant-bg::before {
 }
 
 /* No overlay — background is light, content uses dark text */
-body.has-tenant-bg::after { content: none; }
+body.has-tenant-bg::after {
+  content: none;
+}
 
 /* Per-tenant font — applied to all kiosk pages */
 html.kiosk body,
@@ -304,7 +262,9 @@ body.has-tenant-bg .f-member-years {
   border: 1px solid #e2dccd;
   background: #fff;
   box-shadow: 0 2px 10px rgba(80, 60, 30, 0.06);
-  transition: box-shadow 0.15s ease, border-color 0.15s ease;
+  transition:
+    box-shadow 0.15s ease,
+    border-color 0.15s ease;
 }
 
 .search-input-wrap input:focus {
@@ -330,7 +290,9 @@ body.has-tenant-bg .f-member-years {
   border: none;
 }
 
-.search-clear-btn:hover { background: #e4ddcd; }
+.search-clear-btn:hover {
+  background: #e4ddcd;
+}
 
 .search-go-btn {
   height: 68px;
@@ -340,6 +302,45 @@ body.has-tenant-bg .f-member-years {
   border-radius: 18px;
   flex-shrink: 0;
   box-shadow: 0 2px 10px rgba(0, 113, 227, 0.22);
+}
+
+/* ---- Family vs individual result mode toggle ---- */
+
+.mode-switcher {
+  display: flex;
+  flex-shrink: 0;
+  background: #efeae0;
+  border: 1px solid #e2dccd;
+  border-radius: 18px;
+  padding: 4px;
+  gap: 4px;
+  height: 68px;
+  align-items: center;
+}
+
+.mode-btn {
+  height: 100%;
+  min-width: unset;
+  min-height: unset;
+  padding: 0 20px;
+  font-size: 1.05rem;
+  font-weight: 600;
+  color: #8a8170;
+  background: transparent;
+  border: none;
+  border-radius: 14px;
+  cursor: pointer;
+  transition: background 0.15s ease, color 0.15s ease;
+}
+
+.mode-btn.active {
+  background: #fff;
+  color: var(--color-text);
+  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.1);
+}
+
+.mode-btn:not(.active):hover {
+  color: var(--color-text);
 }
 
 /* ---- Body row: keyboard left + results right (landscape)
@@ -419,8 +420,14 @@ body.has-tenant-bg .f-member-years {
 }
 
 @keyframes results-slide-in {
-  from { opacity: 0; transform: translateX(20px); }
-  to   { opacity: 1; transform: translateX(0); }
+  from {
+    opacity: 0;
+    transform: translateX(20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateX(0);
+  }
 }
 
 .search-results-panel.panel-open {
@@ -428,7 +435,9 @@ body.has-tenant-bg .f-member-years {
   animation: results-slide-in 0.3s cubic-bezier(0.22, 1, 0.36, 1) both;
 }
 
-.search-results-panel::-webkit-scrollbar { display: none; }
+.search-results-panel::-webkit-scrollbar {
+  display: none;
+}
 
 .result-item {
   display: flex;
@@ -441,7 +450,9 @@ body.has-tenant-bg .f-member-years {
   border-radius: var(--radius-lg);
   cursor: pointer;
   min-height: var(--tap-min);
-  transition: border-color 0.12s ease, box-shadow 0.12s ease;
+  transition:
+    border-color 0.12s ease,
+    box-shadow 0.12s ease;
 }
 
 .result-item:hover,
@@ -466,8 +477,15 @@ body.has-tenant-bg .f-member-years {
   border: 2px solid var(--color-border);
 }
 
-.result-name  { font-size: 1.35rem; font-weight: 600; }
-.result-dates { font-size: 1rem; color: var(--color-text-muted); margin-top: 2px; }
+.result-name {
+  font-size: 1.35rem;
+  font-weight: 600;
+}
+.result-dates {
+  font-size: 1rem;
+  color: var(--color-text-muted);
+  margin-top: 2px;
+}
 
 .results-empty {
   text-align: center;
@@ -477,7 +495,7 @@ body.has-tenant-bg .f-member-years {
 }
 
 .results-count {
-  font-size: 1rem;
+  font-size: 1.15rem;
   color: var(--color-text-muted);
   padding: 0 4px 10px;
 }
@@ -491,12 +509,15 @@ body.has-tenant-bg .f-member-years {
   padding: 18px 20px 16px;
   margin-bottom: 12px;
   transition: box-shadow 0.12s ease;
+  text-align: center;
 }
 
-.family-card:hover { box-shadow: var(--shadow); }
+.family-card:hover {
+  box-shadow: var(--shadow);
+}
 
 .fc-name {
-  font-size: 1.35rem;
+  font-size: 1.9rem;
   font-weight: 700;
   color: var(--color-text);
   margin-bottom: 6px;
@@ -505,45 +526,38 @@ body.has-tenant-bg .f-member-years {
 .fc-meta {
   display: flex;
   flex-wrap: wrap;
+  justify-content: center;
   gap: 18px;
-  font-size: 0.98rem;
+  font-size: 1.3rem;
   color: var(--color-text-muted);
   margin-bottom: 14px;
 }
 
-.fc-meta strong { color: var(--color-text); }
+.fc-meta strong {
+  color: var(--color-text);
+}
 
 .fc-actions {
   display: flex;
   gap: 10px;
 }
 
-.fc-btn-detail,
-.fc-btn-plot {
+.fc-btn-detail {
   flex: 1;
-  height: 52px;
-  font-size: 1.05rem;
+  height: 60px;
+  font-size: 1.3rem;
   font-weight: 600;
   border-radius: 12px;
   cursor: pointer;
   min-height: var(--tap-min);
   transition: opacity 0.1s ease;
-}
-
-.fc-btn-detail:active,
-.fc-btn-plot:active { opacity: 0.8; }
-
-.fc-btn-detail {
   background: var(--color-accent);
   color: #fff;
   border: none;
 }
 
-.fc-btn-plot {
-  background: transparent;
-  color: var(--color-accent);
-  border: 1.5px solid var(--color-accent);
-  flex: 1.4;
+.fc-btn-detail:active {
+  opacity: 0.8;
 }
 
 /* ---- Keyboard area — left column in search-body ---- */
@@ -567,7 +581,6 @@ body.has-tenant-bg .f-member-years {
   opacity: 1;
   pointer-events: auto;
 }
-
 
 .kb-body {
   display: flex;
@@ -613,16 +626,20 @@ body.has-tenant-bg .f-member-years {
   background: #ffffff;
   border: none;
   border-radius: 10px;
-  box-shadow: 0 1px 0 rgba(0,0,0,0.28), 0 2px 5px rgba(0,0,0,0.10);
+  box-shadow:
+    0 1px 0 rgba(0, 0, 0, 0.28),
+    0 2px 5px rgba(0, 0, 0, 0.1);
   cursor: pointer;
-  transition: background 0.06s ease, box-shadow 0.06s ease;
+  transition:
+    background 0.06s ease,
+    box-shadow 0.06s ease;
   user-select: none;
   -webkit-tap-highlight-color: transparent;
 }
 
 .kb-key:active {
   background: #a8a8a8;
-  box-shadow: 0 0 0 rgba(0,0,0,0.1);
+  box-shadow: 0 0 0 rgba(0, 0, 0, 0.1);
 }
 
 .kb-key.empty {
@@ -640,17 +657,21 @@ body.has-tenant-bg .f-member-years {
   line-height: 1;
 }
 
-
 /* Special key variants — gray like iOS */
 .kb-key.action {
   background: #adb5bd;
   color: #1c1c1e;
   font-size: 1.15rem;
   font-weight: 600;
-  box-shadow: 0 1px 0 rgba(0,0,0,0.28), 0 2px 5px rgba(0,0,0,0.10);
+  box-shadow:
+    0 1px 0 rgba(0, 0, 0, 0.28),
+    0 2px 5px rgba(0, 0, 0, 0.1);
 }
 
-.kb-key.action:active { background: #8e9399; box-shadow: 0 0 0 rgba(0,0,0,0.1); }
+.kb-key.action:active {
+  background: #8e9399;
+  box-shadow: 0 0 0 rgba(0, 0, 0, 0.1);
+}
 
 /* Dakuten / handakuten — gray modifier, larger label */
 .kb-key.action[data-action="dakuten"],
@@ -677,15 +698,19 @@ body.has-tenant-bg .f-member-years {
   background: #ffffff;
   border: none;
   border-radius: 10px;
-  box-shadow: 0 1px 0 rgba(0,0,0,0.28), 0 2px 5px rgba(0,0,0,0.10);
+  box-shadow:
+    0 1px 0 rgba(0, 0, 0, 0.28),
+    0 2px 5px rgba(0, 0, 0, 0.1);
   cursor: pointer;
   -webkit-tap-highlight-color: transparent;
-  transition: background 0.06s ease, box-shadow 0.06s ease;
+  transition:
+    background 0.06s ease,
+    box-shadow 0.06s ease;
 }
 
 .kb-space:active {
   background: #a8a8a8;
-  box-shadow: 0 0 0 rgba(0,0,0,0.1);
+  box-shadow: 0 0 0 rgba(0, 0, 0, 0.1);
 }
 
 .kb-clear-all {
@@ -699,17 +724,20 @@ body.has-tenant-bg .f-member-years {
   background: #adb5bd;
   border: none;
   border-radius: 10px;
-  box-shadow: 0 1px 0 rgba(0,0,0,0.28), 0 2px 5px rgba(0,0,0,0.10);
+  box-shadow:
+    0 1px 0 rgba(0, 0, 0, 0.28),
+    0 2px 5px rgba(0, 0, 0, 0.1);
   cursor: pointer;
   -webkit-tap-highlight-color: transparent;
-  transition: background 0.06s ease, box-shadow 0.06s ease;
+  transition:
+    background 0.06s ease,
+    box-shadow 0.06s ease;
 }
 
 .kb-clear-all:active {
   background: #8e9399;
-  box-shadow: 0 0 0 rgba(0,0,0,0.1);
+  box-shadow: 0 0 0 rgba(0, 0, 0, 0.1);
 }
-
 
 /* ============================================================
    PROFILE PAGE  —  clean modern memorial
@@ -722,7 +750,9 @@ body.has-tenant-bg .f-member-years {
   background: #faf9f6;
 }
 
-.profile-page::after { display: none; }
+.profile-page::after {
+  display: none;
+}
 
 /* ── Top controls ── */
 
@@ -738,13 +768,25 @@ body.has-tenant-bg .f-member-years {
   background: #fff;
   border: 1.5px solid var(--color-border);
   border-radius: 14px;
-  box-shadow: 0 2px 8px rgba(0,0,0,0.07);
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.07);
   cursor: pointer;
-  transition: background 0.12s ease, box-shadow 0.12s ease;
+  transition:
+    background 0.12s ease,
+    box-shadow 0.12s ease;
 }
 
-.m-btn-back { top: 24px; left: 32px; bottom: auto; display: flex; align-items: center; gap: 6px; }
-.m-btn-end  { top: 24px; right: 32px; }
+.m-btn-back {
+  top: 24px;
+  left: 32px;
+  bottom: auto;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+.m-btn-end {
+  top: 24px;
+  right: 32px;
+}
 
 /* Slideshow button — inline, centered below the family member list */
 .f-slideshow-btn {
@@ -757,9 +799,11 @@ body.has-tenant-bg .f-member-years {
   background: var(--color-accent);
   border: none;
   border-radius: 16px;
-  box-shadow: 0 4px 18px rgba(0,0,0,0.15);
+  box-shadow: 0 4px 18px rgba(0, 0, 0, 0.15);
   cursor: pointer;
-  transition: filter 0.12s ease, transform 0.1s ease;
+  transition:
+    filter 0.12s ease,
+    transform 0.1s ease;
   align-self: center;
 }
 .f-slideshow-btn:active {
@@ -768,12 +812,14 @@ body.has-tenant-bg .f-member-years {
 }
 
 .m-btn-back:hover,
-.m-btn-end:hover { background: rgba(0,0,0,0.04); }
+.m-btn-end:hover {
+  background: rgba(0, 0, 0, 0.04);
+}
 
 .m-btn-back:active,
 .m-btn-end:active {
   transform: translateY(1px);
-  box-shadow: 0 1px 4px rgba(0,0,0,0.07);
+  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.07);
 }
 
 /* ── Loading ── */
@@ -817,32 +863,45 @@ body.has-tenant-bg .f-member-years {
   align-items: center;
   justify-content: center;
   gap: clamp(24px, 5vw, 80px);
-  padding: clamp(96px, 11vh, 112px) clamp(40px, 5vw, 70px) clamp(80px, 9vh, 100px);
+  padding: clamp(96px, 11vh, 112px) clamp(40px, 5vw, 70px)
+    clamp(80px, 9vh, 100px);
   opacity: 0;
   animation: m-fadein 0.9s ease 0.1s forwards;
 }
 
 @keyframes m-fadein {
-  from { opacity: 0; transform: translateY(8px); }
-  to   { opacity: 1; transform: translateY(0); }
+  from {
+    opacity: 0;
+    transform: translateY(8px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
 }
 
 /* Japanese: name slides in from the right (it lives in the right column) */
 @keyframes m-name-ja {
-  from { opacity: 0; transform: translateX(36px); }
-  to   { opacity: 1; transform: translateX(0); }
-}
-
-/* English: name slides down from slightly above */
-@keyframes m-name-en {
-  from { opacity: 0; transform: translateY(-20px); }
-  to   { opacity: 1; transform: translateY(0); }
+  from {
+    opacity: 0;
+    transform: translateX(36px);
+  }
+  to {
+    opacity: 1;
+    transform: translateX(0);
+  }
 }
 
 /* Info/date blocks: slide in from the left */
 @keyframes m-info-in {
-  from { opacity: 0; transform: translateX(-24px); }
-  to   { opacity: 1; transform: translateX(0); }
+  from {
+    opacity: 0;
+    transform: translateX(-24px);
+  }
+  to {
+    opacity: 1;
+    transform: translateX(0);
+  }
 }
 
 /* Side columns (vertical Japanese text) */
@@ -856,10 +915,16 @@ body.has-tenant-bg .f-member-years {
   padding: 40px 0;
 }
 
-.m-side-right { align-items: center; }
-.m-side-left  { align-items: center; }
+.m-side-right {
+  align-items: center;
+}
+.m-side-left {
+  align-items: center;
+}
 
-.lang-ja .m-side-left { flex-direction: row-reverse; }
+.lang-ja .m-side-left {
+  flex-direction: row-reverse;
+}
 
 .lang-ja .m-name,
 .lang-ja .m-kaimyo {
@@ -882,12 +947,9 @@ body.has-tenant-bg .f-member-years {
   margin: 0;
 }
 
-/* Name slide-in — direction matches the column it lives in */
+/* Name slide-in */
 .lang-ja .m-name {
   animation: m-name-ja 1.1s cubic-bezier(0.22, 1, 0.36, 1) 0.3s both;
-}
-.lang-en .m-name {
-  animation: m-name-en 0.85s cubic-bezier(0.22, 1, 0.36, 1) 0.25s both;
 }
 
 .m-kaimyo {
@@ -915,9 +977,15 @@ body.has-tenant-bg .f-member-years {
 }
 
 /* Staggered slide-in for each info block in Japanese mode */
-.lang-ja .m-side-left .m-info:nth-child(1) { animation: m-info-in 0.7s cubic-bezier(0.22, 1, 0.36, 1) 0.42s both; }
-.lang-ja .m-side-left .m-info:nth-child(2) { animation: m-info-in 0.7s cubic-bezier(0.22, 1, 0.36, 1) 0.54s both; }
-.lang-ja .m-side-left .m-info:nth-child(3) { animation: m-info-in 0.7s cubic-bezier(0.22, 1, 0.36, 1) 0.66s both; }
+.lang-ja .m-side-left .m-info:nth-child(1) {
+  animation: m-info-in 0.7s cubic-bezier(0.22, 1, 0.36, 1) 0.42s both;
+}
+.lang-ja .m-side-left .m-info:nth-child(2) {
+  animation: m-info-in 0.7s cubic-bezier(0.22, 1, 0.36, 1) 0.54s both;
+}
+.lang-ja .m-side-left .m-info:nth-child(3) {
+  animation: m-info-in 0.7s cubic-bezier(0.22, 1, 0.36, 1) 0.66s both;
+}
 
 .m-info-label {
   font-size: clamp(1rem, 1.5vw, 1.3rem);
@@ -927,7 +995,7 @@ body.has-tenant-bg .f-member-years {
 
 .m-info-value {
   font-size: clamp(1.4rem, 2.4vw, 2.2rem);
-  letter-spacing: 0.10em;
+  letter-spacing: 0.1em;
   line-height: 1.25;
   color: #1a1816;
 }
@@ -938,8 +1006,13 @@ body.has-tenant-bg .f-member-years {
 }
 
 @keyframes m-pulse {
-  0%, 100% { background: rgba(0, 113, 227, 0.06); }
-  50%      { background: rgba(0, 113, 227, 0.18); }
+  0%,
+  100% {
+    background: rgba(0, 113, 227, 0.06);
+  }
+  50% {
+    background: rgba(0, 113, 227, 0.18);
+  }
 }
 
 /* ── Center: framed photo ── */
@@ -968,7 +1041,10 @@ body.has-tenant-bg .f-member-years {
   -webkit-user-select: none;
 }
 
-.p-slides { position: absolute; inset: 0; }
+.p-slides {
+  position: absolute;
+  inset: 0;
+}
 
 .p-slide {
   position: absolute;
@@ -987,8 +1063,12 @@ body.has-tenant-bg .f-member-years {
 }
 
 @keyframes kb {
-  0%   { transform: scale(1.0); }
-  100% { transform: scale(1.06); }
+  0% {
+    transform: scale(1);
+  }
+  100% {
+    transform: scale(1.06);
+  }
 }
 
 /* No-photo placeholder */
@@ -1047,7 +1127,9 @@ body.has-tenant-bg .f-member-years {
   pointer-events: none;
 }
 
-.m-bottom > * { pointer-events: auto; }
+.m-bottom > * {
+  pointer-events: auto;
+}
 
 .m-audio-wrap {
   display: flex;
@@ -1069,12 +1151,20 @@ body.has-tenant-bg .f-member-years {
   border: 1.5px solid var(--color-border);
   border-radius: 60px;
   cursor: pointer;
-  box-shadow: 0 2px 12px rgba(0,0,0,0.10);
-  transition: background 0.12s ease, box-shadow 0.12s ease;
+  box-shadow: 0 2px 12px rgba(0, 0, 0, 0.1);
+  transition:
+    background 0.12s ease,
+    box-shadow 0.12s ease;
 }
 
-.m-audio-btn:hover  { background: rgba(0,0,0,0.03); box-shadow: 0 4px 20px rgba(0,0,0,0.13); }
-.m-audio-btn:active { background: rgba(0,0,0,0.07); transform: translateY(1px); }
+.m-audio-btn:hover {
+  background: rgba(0, 0, 0, 0.03);
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.13);
+}
+.m-audio-btn:active {
+  background: rgba(0, 0, 0, 0.07);
+  transform: translateY(1px);
+}
 
 .m-audio-icon {
   font-size: 1.4rem;
@@ -1114,8 +1204,12 @@ body.has-tenant-bg .f-member-years {
   transition: background 0.12s ease;
 }
 
-.m-link:hover { background: rgba(0,0,0,0.03); }
-.m-link:active { background: rgba(0,0,0,0.07); }
+.m-link:hover {
+  background: rgba(0, 0, 0, 0.03);
+}
+.m-link:active {
+  background: rgba(0, 0, 0, 0.07);
+}
 
 /* ── Biography overlay ── */
 
@@ -1173,15 +1267,9 @@ body.has-tenant-bg .f-member-years {
   transition: opacity 0.12s ease;
 }
 
-.m-bio-close:active { transform: translateY(1px); }
-
-/* ── English fallback (horizontal) ── */
-
-.lang-en .m-stage { flex-direction: column; gap: clamp(8px, 1.5vh, 24px); padding: clamp(80px, 9vh, 120px) 60px clamp(100px, 12vh, 160px); }
-.lang-en .m-side  { flex-direction: column; align-items: center; gap: 8px; padding: 0; }
-.lang-en .m-name  { text-align: center; letter-spacing: 0; }
-.lang-en .m-info  { gap: 8px; }
-.lang-en .m-info-value { font-size: clamp(1.2rem, 2vw, 1.6rem); }
+.m-bio-close:active {
+  transform: translateY(1px);
+}
 
 /* ── Error state ── */
 
@@ -1199,8 +1287,15 @@ body.has-tenant-bg .f-member-years {
   z-index: 30;
 }
 
-.p-error p { font-size: 1.4rem; }
-.p-error a { font-size: 1.1rem; color: var(--color-accent); font-weight: 600; text-decoration: none; }
+.p-error p {
+  font-size: 1.4rem;
+}
+.p-error a {
+  font-size: 1.1rem;
+  color: var(--color-accent);
+  font-weight: 600;
+  text-decoration: none;
+}
 
 /* ── Family members section ── */
 
@@ -1242,8 +1337,10 @@ body.has-tenant-bg .f-member-years {
   align-items: center;
   gap: 6px;
   min-width: 120px;
-  box-shadow: 0 1px 4px rgba(0,0,0,0.07);
-  transition: border-color 0.15s ease, box-shadow 0.15s ease;
+  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.07);
+  transition:
+    border-color 0.15s ease,
+    box-shadow 0.15s ease;
 }
 
 .m-family-card:hover {
@@ -1283,7 +1380,7 @@ body.has-tenant-bg .f-member-years {
   display: flex;
   align-items: center;
   justify-content: center;
-  overflow: hidden;
+  overflow-y: auto;
   position: relative;
 }
 
@@ -1306,7 +1403,7 @@ body.has-tenant-bg .f-member-years {
   padding: 40px 20px;
   text-align: center;
   width: 100%;
-  max-width: 800px;
+  max-width: 1080px;
 }
 
 .f-family-name {
@@ -1322,9 +1419,11 @@ body.has-tenant-bg .f-member-years {
   letter-spacing: 0.03em;
 }
 
+/* Column count is set per-render by family.html JS, based on member count,
+   so 6-8 people split into balanced top/bottom rows instead of an uneven wrap. */
 .f-members {
-  display: flex;
-  flex-wrap: wrap;
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
   justify-content: center;
   gap: clamp(12px, 2vw, 20px);
   width: 100%;
@@ -1335,15 +1434,18 @@ body.has-tenant-bg .f-member-years {
   border: 1.5px solid var(--color-border);
   border-radius: 16px;
   color: var(--color-text);
-  padding: clamp(16px, 2.5vw, 28px) clamp(24px, 4vw, 48px);
+  padding: clamp(16px, 2.5vw, 28px) clamp(16px, 3vw, 32px);
   cursor: pointer;
   display: flex;
   flex-direction: column;
   align-items: center;
+  justify-content: center;
   gap: 8px;
-  min-width: clamp(160px, 25vw, 260px);
-  box-shadow: 0 2px 8px rgba(0,0,0,0.07);
-  transition: border-color 0.15s ease, box-shadow 0.15s ease;
+  width: 100%;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.07);
+  transition:
+    border-color 0.15s ease,
+    box-shadow 0.15s ease;
 }
 
 .f-member-btn:hover,
@@ -1404,4 +1506,6 @@ body.has-tenant-bg .f-member-years {
   pointer-events: auto;
 }
 
-.m-lightbox-close:hover { background: rgba(255, 255, 255, 0.25); }
+.m-lightbox-close:hover {
+  background: rgba(255, 255, 255, 0.25);
+}

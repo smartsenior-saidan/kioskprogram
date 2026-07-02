@@ -15,7 +15,7 @@
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
     <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Shippori+Mincho:wght@400;500;600;700;800&display=swap" />
-    <link rel="stylesheet" href="css/kiosk.css?v=20" />
+    <link rel="stylesheet" href="css/kiosk.css?v=36" />
     <script src="js/config.js"></script>
   </head>
   <body class="family-page lang-ja">
@@ -42,29 +42,16 @@
       import { applyTenantBackground } from "./js/tenant-bg.js";
       applyTenantBackground();
 
-      const lang = sessionStorage.getItem('kiosk_lang') || 'ja';
-      const ja   = lang !== 'en';
-
-      document.getElementById('fnavBack').textContent = ja ? '◀ 戻る' : '◀ Back';
       document.getElementById('fnavBack').addEventListener('click', () => {
         window.location.href = `index.html?restore=search&site=${window.__ENV__.TENANT_ID}`;
       });
-      document.getElementById('fnavEnd').textContent = ja ? '参拝終了' : 'End Visit';
       document.getElementById('fnavEnd').addEventListener('click', () => {
         window.location.href = `thankyou.html?site=${window.__ENV__.TENANT_ID}`;
       });
 
-      document.getElementById('fnavSlideshow').textContent = ja ? 'スライドショー ▶' : 'Slideshow ▶';
       document.getElementById('fnavSlideshow').addEventListener('click', () => {
         window.location.href = `slideshow.html?person=${encodeURIComponent(personId)}&site=${window.__ENV__.TENANT_ID}`;
       });
-      document.getElementById('fSubtitle').textContent = ja
-        ? 'お参りする故人を選択してください'
-        : 'Select a family member to view their memorial';
-
-      document.body.classList.toggle('lang-ja', ja);
-      document.body.classList.toggle('lang-en', !ja);
-      document.documentElement.lang = lang;
 
       const params   = new URLSearchParams(window.location.search);
       const personId = params.get('person');
@@ -76,17 +63,17 @@
         document.body.insertAdjacentHTML('beforeend', `
           <div class="p-error">
             <p>${msg}</p>
-            <a href="index.html">${ja ? '← 検索に戻る' : '← Return to search'}</a>
+            <a href="index.html">← 検索に戻る</a>
           </div>`);
       }
 
       if (!personId) {
-        showError(ja ? 'ご家族の情報が指定されていません。' : 'No family specified.');
+        showError('ご家族の情報が指定されていません。');
       } else {
         (async () => {
           try {
             const root = await getPersonById(personId);
-            if (!root) { showError(ja ? '記録が見つかりませんでした。' : 'Memorial not found.'); return; }
+            if (!root) { showError('記録が見つかりませんでした。'); return; }
 
             // Collect all member IDs: root + related
             const relatedIds = root.related_persons || [];
@@ -98,18 +85,18 @@
             const members = snaps.filter((s) => s.exists()).map((s) => ({ id: s.id, ...s.data() }));
 
             // Family name: use shared last_name from root
-            const familyNameText = ja
-              ? `${root.last_name || ''}家`
-              : `${root.last_name || ''} Family`;
+            const familyNameText = `${root.last_name || ''}家`;
             document.getElementById('fFamilyName').textContent = familyNameText;
             document.title = `${familyNameText} — SmartSenior`;
 
             // Render member buttons
+            // Split into balanced top/bottom rows for larger families (5-8 people)
+            // instead of an uneven wrap; small families get one evenly centered row.
             const membersEl = document.getElementById('fMembers');
+            const cols = members.length <= 4 ? members.length : Math.ceil(members.length / 2);
+            membersEl.style.gridTemplateColumns = `repeat(${cols}, minmax(0, 1fr))`;
             membersEl.innerHTML = members.map((m) => {
-              const name = ja
-                ? `${m.last_name || ''}　${m.first_name || ''}`.trim()
-                : `${m.first_name || ''} ${m.last_name || ''}`.trim();
+              const name = `${m.last_name || ''}　${m.first_name || ''}`.trim();
               const years = m.birth_date || m.death_date
                 ? `${(m.birth_date || '').slice(0,4) || '?'} – ${(m.death_date || '').slice(0,4) || '?'}`
                 : '';
@@ -130,7 +117,7 @@
             main.classList.remove('hidden');
           } catch (err) {
             console.error('[family]', err);
-            showError(ja ? '読み込みに失敗しました。' : 'Something went wrong.');
+            showError('読み込みに失敗しました。');
           }
         })();
       }

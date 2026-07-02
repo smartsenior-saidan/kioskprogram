@@ -15,7 +15,7 @@
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
     <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Shippori+Mincho:wght@400;500;600;700;800&display=swap" />
-    <link rel="stylesheet" href="css/kiosk.css?v=20" />
+    <link rel="stylesheet" href="css/kiosk.css?v=36" />
     <script src="js/config.js"></script>
     <style>
       .ty-page {
@@ -32,7 +32,7 @@
       }
 
       .ty-main {
-        font-size: clamp(2.8rem, 7vw, 5.5rem);
+        font-size: clamp(1.7rem, 4.2vw, 2.8rem);
         font-weight: 700;
         color: #1a1816;
         letter-spacing: 0.12em;
@@ -41,7 +41,7 @@
       }
 
       .ty-sub {
-        font-size: clamp(1.1rem, 2.2vw, 1.8rem);
+        font-size: clamp(1rem, 1.8vw, 1.5rem);
         color: #555;
         letter-spacing: 0.06em;
         line-height: 1.6;
@@ -106,7 +106,7 @@
       }
 
       .ty-countdown-label {
-        font-size: clamp(0.9rem, 1.4vw, 1.1rem);
+        font-size: clamp(0.85rem, 1.2vw, 1rem);
         color: #888;
         letter-spacing: 0.04em;
       }
@@ -139,18 +139,6 @@
 
     <script type="module">
       import { applyTenantBackground } from "./js/tenant-bg.js";
-
-      const lang = sessionStorage.getItem('kiosk_lang') || 'ja';
-      const ja   = lang !== 'en';
-
-      document.documentElement.lang = lang;
-
-      if (!ja) {
-        document.getElementById('tyMain').textContent  = 'Thank You for Your Visit';
-        document.getElementById('tySub').textContent   = 'We look forward to welcoming you again.';
-        document.getElementById('tyLabel').textContent = 'seconds until returning home';
-        document.title = 'Thank You — SmartSenior';
-      }
 
       // Countdown
       const TOTAL   = 10;

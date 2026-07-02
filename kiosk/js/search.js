@@ -11,6 +11,11 @@ import {
   COLLECTIONS,
 } from "./firebase.js";
 
+// --- Result mode: family (browse the whole family) vs individual (go straight
+// to that person's own profile) -----------------------------------------------
+
+let searchMode = sessionStorage.getItem('kiosk_search_mode') || 'family';
+
 // --- Fuzzy matching utilities ----------------------------------------------
 
 /** Detect whether the string contains Japanese characters. */
@@ -169,63 +174,45 @@ export async function searchPersons(queryText, opts = {}) {
 function renderResults(results, container) {
   container.innerHTML = "";
 
-  const lang = sessionStorage.getItem('kiosk_lang') || 'ja';
-
   if (!results.length) {
-    const msg = lang === 'en'
-      ? 'No matches found. Try searching by last name only.'
-      : '該当する方が見つかりませんでした。<br>別のお名前や姓のみでお試しください。';
+    const msg = '該当する方が見つかりませんでした。<br>別のお名前や姓のみでお試しください。';
     container.innerHTML = `<div class="results-empty">${msg}</div>`;
     return;
   }
 
   // Count summary
   const n = results.length;
-  const summary = lang === 'en'
-    ? `${n} result${n > 1 ? 's' : ''} found.`
-    : `${n}件の家族が見つかりました。`;
+  const summary = `${n}件の家族が見つかりました。`;
   container.innerHTML = `<p class="results-count">${summary}</p>`;
 
   for (const person of results) {
     const card = document.createElement("div");
     card.className = "family-card";
 
-    const familyLabel = lang === 'en'
-      ? `${person.last_name || ''} Family`
-      : `${person.last_name || ''}家`;
+    const fullName = `${person.last_name || ''} ${person.first_name || ''}`.trim();
+    const plotLabel  = '区画：';
+    const detailBtn  = '詳細';
+    const plotRow = person.plot ? `<span>${plotLabel}<strong>${person.plot}</strong></span>` : '';
 
-    const fullName = lang === 'en'
-      ? `${person.first_name || ''} ${person.last_name || ''}`.trim()
-      : `${person.last_name || ''} ${person.first_name || ''}`.trim();
-
-    const headLabel  = lang === 'en' ? '施主：'  : '施主：';
-    const plotLabel  = lang === 'en' ? 'Plot：'  : '区画：';
-    const detailBtn  = lang === 'en' ? '詳細'    : '詳細';
-    const plotBtn    = lang === 'en' ? 'Find Plot' : '区画へ案内';
-
+    // Lead with the person's own name (not "<last name>家") — the row/column
+    // (plot) underneath is enough context without grouping by family.
     card.innerHTML = `
-      <div class="fc-name">${familyLabel}</div>
+      <div class="fc-name">${fullName}</div>
       <div class="fc-meta">
-        <span>${headLabel}<strong>${fullName}</strong></span>
-        ${person.plot ? `<span>${plotLabel}<strong>${person.plot}</strong></span>` : ''}
+        ${plotRow}
       </div>
       <div class="fc-actions">
         <button class="fc-btn-detail">${detailBtn}</button>
-        ${person.plot ? `<button class="fc-btn-plot">${plotBtn}</button>` : ''}
       </div>`;
 
     card.querySelector('.fc-btn-detail').addEventListener('click', () => {
       sessionStorage.setItem('kiosk_person', person.id);
       const q = document.getElementById('searchInput');
       sessionStorage.setItem('kiosk_last_query', q?.value || '');
-      sessionStorage.removeItem('kiosk_view');
-      window.location.href = `family.html?person=${encodeURIComponent(person.id)}`;
-    });
-
-    card.querySelector('.fc-btn-plot')?.addEventListener('click', () => {
-      sessionStorage.setItem('kiosk_person', person.id);
-      sessionStorage.setItem('kiosk_view', 'plot');
-      window.location.href = `profile.html?person=${encodeURIComponent(person.id)}&view=plot`;
+      const dest = searchMode === 'individual'
+        ? `profile.html?person=${encodeURIComponent(person.id)}`
+        : `family.html?person=${encodeURIComponent(person.id)}`;
+      window.location.href = dest;
     });
 
     container.appendChild(card);
@@ -255,7 +242,7 @@ export function initSearchScreen() {
     } catch (err) {
       console.error("[search] failed:", err);
       results.innerHTML =
-        '<div class="results-empty">Search is unavailable right now.</div>';
+        '<div class="results-empty">現在検索を利用できません。</div>';
     }
   };
 
@@ -278,4 +265,16 @@ export function initSearchScreen() {
   // Warm the cache so the first keystroke is instant.
   loadPersons().catch((err) => console.warn("[search] preload failed:", err));
   input.focus();
+
+  // Family vs individual result mode toggle.
+  const modeButtons = document.querySelectorAll('#searchModeSwitcher [data-mode]');
+  modeButtons.forEach((btn) => {
+    btn.classList.toggle('active', btn.dataset.mode === searchMode);
+    btn.addEventListener('click', () => {
+      if (btn.dataset.mode === searchMode) return;
+      searchMode = btn.dataset.mode;
+      sessionStorage.setItem('kiosk_search_mode', searchMode);
+      modeButtons.forEach((b) => b.classList.toggle('active', b === btn));
+    });
+  });
 }

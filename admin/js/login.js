@@ -6,7 +6,7 @@ import {
   signOut,
   doc,
   getDoc,
-} from "./firebase.js";
+} from "./firebase.js?v=3";
 
 const form      = document.getElementById("loginForm");
 const emailEl   = document.getElementById("email");

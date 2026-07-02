@@ -9,6 +9,8 @@
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
 import {
   getAuth,
+  setPersistence,
+  browserSessionPersistence,
   signInWithEmailAndPassword,
   sendPasswordResetEmail,
   onAuthStateChanged,
@@ -81,6 +83,15 @@ const app = initializeApp(firebaseConfig);
 export const db = getFirestore(app);
 export const storage = getStorage(app);
 export const auth = getAuth(app);
+
+// Session-only persistence: signing in stays valid while this browser tab/session
+// is open (surviving the login.html -> index.html redirect), but closing the
+// browser clears it. Prevents a login from silently auto-restoring forever on a
+// shared/demo device — every fresh session must sign in again.
+setPersistence(auth, browserSessionPersistence).catch((err) =>
+  console.warn("[admin] failed to set auth persistence:", err)
+);
+
 export { signInWithEmailAndPassword, sendPasswordResetEmail, onAuthStateChanged, signOut };
 
 // Collection name constants (single source of truth).
