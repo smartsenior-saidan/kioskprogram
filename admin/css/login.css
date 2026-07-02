@@ -81,7 +81,7 @@ body {
 
 .login-status.error   { background: #FFF2F2; color: #C0392B; border: 1px solid #FECACA; }
 .login-status.success { background: #F0FFF4; color: #15803D; border: 1px solid #BBF7D0; }
-.login-status.info    { background: #EFF6FF; color: #1D4ED8; border: 1px solid #BFDBFE; }
+.login-status.info    { background: #F1F3F5; color: #334155; border: 1px solid #D3D8DE; }
 
 /* ---- Form fields ----------------------------------------------------------- */
 
@@ -114,8 +114,8 @@ body {
 .field input::placeholder { color: #AEAEB2; }
 
 .field input:focus {
-  border-color: #0071E3;
-  box-shadow: 0 0 0 3px rgba(0, 113, 227, 0.15);
+  border-color: #475569;
+  box-shadow: 0 0 0 3px rgba(71, 85, 105, 0.15);
 }
 
 /* ---- Buttons --------------------------------------------------------------- */
@@ -149,7 +149,7 @@ body {
   margin-top: 16px;
   background: none;
   border: none;
-  color: #0071E3;
+  color: #475569;
   font-family: inherit;
   font-size: 0.88rem;
   font-weight: 500;
@@ -158,7 +158,7 @@ body {
   padding: 4px;
 }
 
-.btn-forgot:hover { color: #0077ED; text-decoration: underline; }
+.btn-forgot:hover { color: #334155; text-decoration: underline; }
 
 /* ---- Hidden ---------------------------------------------------------------- */
 

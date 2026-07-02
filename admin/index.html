@@ -63,11 +63,6 @@
           </div>
           <div class="top-bar-right">
             <div id="topStatus" class="top-status hidden"></div>
-            <div class="lang-switch" id="langSwitch">
-              <button type="button" data-lang="en">EN</button>
-              <button type="button" data-lang="ja">日本語</button>
-            </div>
-            <button class="btn" id="newProfileBtn" data-i18n="btn.newProfile">+ New Profile</button>
           </div>
         </header>
 
@@ -76,15 +71,25 @@
           <!-- ══ DASHBOARD ══ -->
           <section id="sec-dashboard" class="section active">
 
-            <div class="stat-row">
-              <div class="stat-card gradient-blue">
-                <p class="stat-label" data-i18n="stat.totalProfiles">Total Profiles</p>
-                <p class="stat-value" id="statProfiles">—</p>
-                <p class="stat-sub" data-i18n="stat.totalProfilesSub">Deceased persons</p>
+            <div class="fi-panels">
+              <div class="card">
+                <div class="card-row" style="margin-bottom:16px">
+                  <h3 class="card-title" data-i18n="fi.familyMembers">Family Members</h3>
+                </div>
+                <input id="familySearchInput" type="search" placeholder="Search by name…" data-i18n-ph="ph.fiSearch" aria-label="Search family members" class="fi-search" />
+                <div id="fiFamilyList" class="fi-list"><div class="spinner"></div></div>
+              </div>
+
+              <div class="card">
+                <div class="card-row" style="margin-bottom:16px">
+                  <h3 class="card-title" data-i18n="fi.individualMembers">Individual Members</h3>
+                </div>
+                <input id="individualSearchInput" type="search" placeholder="Search by name…" data-i18n-ph="ph.fiSearch" aria-label="Search individual members" class="fi-search" />
+                <div id="fiIndividualList" class="fi-list"><div class="spinner"></div></div>
               </div>
             </div>
 
-            <div class="card" style="margin-top:24px">
+            <div class="card" style="margin-top:16px">
               <div class="card-row">
                 <h3 class="card-title" data-i18n="card.recentProfiles">Recent Profiles</h3>
                 <button class="btn-link" data-section="profiles" data-i18n="link.viewAll">View all →</button>
@@ -129,10 +134,17 @@
                     </div>
                   </div>
 
-                  <div class="field">
-                    <label for="familyName" data-i18n="form.familyName">Family / maiden name</label>
-                    <input id="familyName" type="text" placeholder="Helps guests search under an additional surname" data-i18n-ph="ph.familyName" />
+                  <div class="form-row">
+                    <div class="field">
+                      <label for="firstNameKana" data-i18n="form.firstNameKana">First name (hiragana)</label>
+                      <input id="firstNameKana" type="text" placeholder="はなこ" data-i18n-ph="ph.firstNameKana" />
+                    </div>
+                    <div class="field">
+                      <label for="lastNameKana" data-i18n="form.lastNameKana">Last name (hiragana)</label>
+                      <input id="lastNameKana" type="text" placeholder="やまだ" data-i18n-ph="ph.lastNameKana" />
+                    </div>
                   </div>
+                  <p class="field-hint" data-i18n="hint.nameKana">Hiragana readings let guests search by kana even if they don't know the kanji.</p>
 
                   <div class="field">
                     <label for="kaimyo" data-i18n="form.kaimyo">Posthumous name (kaimyo)</label>
@@ -165,12 +177,6 @@
                   <div class="field">
                     <label for="biography" data-i18n="form.biography">Biography</label>
                     <textarea id="biography" placeholder="Share their life story, memories, and legacy…" data-i18n-ph="ph.biography"></textarea>
-                  </div>
-
-                  <div class="field field-presentation">
-                    <label for="presentationUrl" data-i18n="form.presentationUrl">Presentation link (optional)</label>
-                    <input id="presentationUrl" type="url" inputmode="url" placeholder="https://…  link to a premade presentation" data-i18n-ph="ph.presentationUrl" />
-                    <p class="field-hint" data-i18n="hint.presentationUrl">If set, the kiosk opens this presentation instead of the photos &amp; videos below.</p>
                   </div>
 
                   <div class="field">
@@ -266,7 +272,7 @@
 
     <script src="./js/qrcode.min.js"></script>
     <script type="module">
-      import { initAdminPortal } from "./js/admin.js?v=7";
+      import { initAdminPortal } from "./js/admin.js?v=17";
       initAdminPortal();
     </script>
   </body>
