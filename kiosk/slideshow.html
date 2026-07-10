@@ -99,8 +99,10 @@
     <!-- Profile stage — same structure as profile.html -->
     <div class="m-stage hidden" id="pMain">
       <div class="m-side m-side-right">
-        <div class="m-kaimyo hidden" id="pKaimyo"></div>
-        <h1 class="m-name" id="pName"></h1>
+        <div class="m-name-group">
+          <div class="m-kaimyo hidden" id="pKaimyo"></div>
+          <h1 class="m-name" id="pName"></h1>
+        </div>
       </div>
       <div class="m-center">
         <div class="m-photo" id="pPhoto">
@@ -112,17 +114,19 @@
         <div class="m-dots hidden" id="pDots"></div>
       </div>
       <div class="m-side m-side-left">
-        <div class="m-info hidden" id="pBirthBlock">
-          <span class="m-info-label" id="pBirthLabel">生誕</span>
-          <span class="m-info-value" id="pBirthDate"></span>
-        </div>
-        <div class="m-info hidden" id="pDeathBlock">
-          <span class="m-info-label" id="pDeathLabel">没日</span>
-          <span class="m-info-value" id="pDeathDate"></span>
-        </div>
-        <div class="m-info hidden" id="pAgeBlock">
-          <span class="m-info-label" id="pAgeLabel">享年</span>
-          <span class="m-info-value" id="pAge"></span>
+        <div class="m-info-group">
+          <div class="m-info hidden" id="pBirthBlock">
+            <span class="m-info-label" id="pBirthLabel">生誕</span>
+            <span class="m-info-value" id="pBirthDate"></span>
+          </div>
+          <div class="m-info hidden" id="pDeathBlock">
+            <span class="m-info-label" id="pDeathLabel">没日</span>
+            <span class="m-info-value" id="pDeathDate"></span>
+          </div>
+          <div class="m-info hidden" id="pAgeBlock">
+            <span class="m-info-label" id="pAgeLabel">享年</span>
+            <span class="m-info-value" id="pAge"></span>
+          </div>
         </div>
       </div>
     </div>
@@ -193,6 +197,15 @@
       function show(id)       { document.getElementById(id)?.classList.remove('hidden'); }
       function hide(id)       { document.getElementById(id)?.classList.add('hidden'); }
 
+      function setFit(id, text, { longAt, xlongAt }) {
+        const el = document.getElementById(id);
+        if (!el) return;
+        el.textContent = text || '';
+        const len = (text || '').length;
+        el.classList.toggle('is-long', len > longAt && len <= xlongAt);
+        el.classList.toggle('is-xlong', len > xlongAt);
+      }
+
       // ── State ────────────────────────────────────────────────────────────
 
       let members       = [];
@@ -240,24 +253,24 @@
 
         // Name
         const name = `${person.last_name || ''}${person.first_name || ''}`.trim();
-        set('pName', name);
+        setFit('pName', name, { longAt: 4, xlongAt: 6 });
 
         // Kaimyo
         const kaimyo = person.kaimyo || person.posthumous_name || '';
-        if (kaimyo) { set('pKaimyo', kaimyo); show('pKaimyo'); }
+        if (kaimyo) { setFit('pKaimyo', kaimyo, { longAt: 6, xlongAt: 10 }); show('pKaimyo'); }
         else hide('pKaimyo');
 
         // Birth date
         if (person.birth_date) {
           set('pBirthLabel', '生誕');
-          set('pBirthDate', toEraDate(person.birth_date));
+          setFit('pBirthDate', toEraDate(person.birth_date), { longAt: 8, xlongAt: 11 });
           show('pBirthBlock');
         } else hide('pBirthBlock');
 
         // Death date
         if (person.death_date) {
           set('pDeathLabel', '没日');
-          set('pDeathDate', toEraDate(person.death_date));
+          setFit('pDeathDate', toEraDate(person.death_date), { longAt: 8, xlongAt: 11 });
           show('pDeathBlock');
         } else hide('pDeathBlock');
 

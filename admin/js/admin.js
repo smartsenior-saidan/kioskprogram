@@ -23,10 +23,12 @@ import {
   deleteObject,
   COLLECTIONS,
   TENANT_ID,
+  ROLE,
+  DISPLAY_NAME,
   personMediaCollection,
   personMediaDoc,
 } from "./firebase.js?v=3";
-import { t, getLang, setLang, applyStaticI18n, onLangChange } from "./i18n.js?v=16";
+import { t, getLang, setLang, applyStaticI18n, onLangChange } from "./i18n.js?v=17";
 
 // ── State ───────────────────────────────────────────────────────────────────
 
@@ -35,12 +37,20 @@ let stagedCover = null;    // { file, previewUrl } — new cover upload
 let existingCover = null;  // { id, storage_url, storage_path } — loaded from Firestore
 let existingGallery = [];  // [{ id, storage_url, storage_path, file_type }] — loaded from Firestore
 let removedMediaIds = [];  // Firestore media doc IDs queued for deletion on save
-let stagedBg = null;       // { file, previewUrl } — new background upload
-let existingBgUrl = null;  // string URL stored on person doc
-let existingBgPath = null; // string Storage path for deletion
+let bgPresets = [];         // [{ path, url }] — this tenant's 5 shared backgrounds, resolved once
+let selectedBgPath = null;  // path of the chosen preset (matches an entry in bgPresets), or null
 let editingPersonId = null;
 let editingPerson = null;   // full person object while editing (for re-translation)
 let allProfiles = [];       // cached for client-side filtering
+
+// Escape user-entered text before interpolating it into innerHTML templates.
+function esc(s) {
+  return String(s ?? "")
+    .replaceAll("&", "&amp;")
+    .replaceAll("<", "&lt;")
+    .replaceAll(">", "&gt;")
+    .replaceAll('"', "&quot;");
+}
 
 // Matches a person against a free-text name query, first name or last name
 // alone, or both together in either order (Japanese convention is last-then-
@@ -100,6 +110,8 @@ function showSection(name, opts = {}) {
 
   const titleEl = document.getElementById("pageTitle");
   if (titleEl) titleEl.textContent = currentPageTitle();
+  const subEl = document.getElementById("pageSubtitle");
+  if (subEl) subEl.textContent = t(`sub.${name}`);
 
   // Lazy-load sections. Family/individual share the dashboard's data load,
   // which populates the recent-profiles table and both member lists.
@@ -151,12 +163,22 @@ window.addEventListener("popstate", async (e) => {
 
 // ── Status helpers ───────────────────────────────────────────────────────────
 
+const TOAST_ICONS = {
+  info:    '<svg viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2v-3a1 1 0 00-1-1H9z" clip-rule="evenodd"/></svg>',
+  success: '<svg viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clip-rule="evenodd"/></svg>',
+  error:   '<svg viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-8-5a1 1 0 00-1 1v4a1 1 0 002 0V6a1 1 0 00-1-1zm0 10a1.25 1.25 0 100-2.5 1.25 1.25 0 000 2.5z" clip-rule="evenodd"/></svg>',
+};
+
 function setStatus(msg, kind = "info") {
   const el = document.getElementById("topStatus");
   if (!el) return;
-  el.className = `top-status ${kind}`;
-  el.textContent = msg;
+  el.className = `toast ${kind}`;
+  el.innerHTML = `<span class="toast-icon">${TOAST_ICONS[kind] || TOAST_ICONS.info}</span><span class="toast-msg">${esc(msg)}</span>`;
   el.classList.remove("hidden");
+  // Restart the slide-in animation on repeat calls
+  el.style.animation = "none";
+  void el.offsetWidth;
+  el.style.animation = "";
   clearTimeout(el._timer);
   el._timer = setTimeout(() => el.classList.add("hidden"), 4000);
 }
@@ -226,8 +248,8 @@ function renderFamilyIndividualPanel() {
     .sort((a, b) => a[0].localeCompare(b[0]))
     .map(([lastName, members]) => `
       <div class="fi-family-group">
-        <button type="button" class="fi-family-header" data-last-name="${lastName}">
-          <span class="fi-family-name">${lastName}家</span>
+        <button type="button" class="fi-family-header" data-last-name="${esc(lastName)}">
+          <span class="fi-family-name">${esc(lastName)}家</span>
           <span class="fi-family-count">${members.length}${t("fi.peopleSuffix")}</span>
           <span class="fi-family-chevron">›</span>
         </button>
@@ -235,8 +257,8 @@ function renderFamilyIndividualPanel() {
           ${members
             .map((m) => `
               <button type="button" class="fi-member-row" data-id="${m.id}">
-                <span>${m.last_name || ""} ${m.first_name || ""}</span>
-                <span>${m.plot || "—"}</span>
+                <span>${esc(m.last_name || "")} ${esc(m.first_name || "")}</span>
+                <span>${esc(m.plot || "—")}</span>
               </button>`)
             .join("")}
         </div>
@@ -247,8 +269,8 @@ function renderFamilyIndividualPanel() {
 
   const individualRow = (p) => `
     <tr data-id="${p.id}">
-      <td>${p.last_name || ""} ${p.first_name || ""}</td>
-      <td>${p.plot || "—"}</td>
+      <td>${esc(p.last_name || "")} ${esc(p.first_name || "")}</td>
+      <td>${esc(p.plot || "—")}</td>
     </tr>`;
 
   individualEl.innerHTML = individualMembers.length
@@ -304,6 +326,56 @@ function sortProfiles(list) {
   });
 }
 
+// ── Dashboard stat cards ──────────────────────────────────────────────────────
+
+/** Animate a number from 0 to `target` inside `el` (respects reduced motion). */
+function countUp(el, target) {
+  const reduced = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+  if (reduced || target === 0) { el.textContent = target; return; }
+  const dur = 600;
+  const start = performance.now();
+  function tick(now) {
+    const p = Math.min((now - start) / dur, 1);
+    // ease-out cubic
+    el.textContent = Math.round(target * (1 - Math.pow(1 - p, 3)));
+    if (p < 1) requestAnimationFrame(tick);
+  }
+  requestAnimationFrame(tick);
+}
+
+function renderStats(persons) {
+  const wrap = document.getElementById("statCards");
+  if (!wrap) return;
+
+  const withFamily = persons.filter((p) => (p.related_persons || []).length > 0);
+  const familyGroups = new Set(withFamily.map((p) => p.last_name || "—")).size;
+  const individuals = persons.length - withFamily.length;
+
+  const now = new Date();
+  const monthStart = new Date(now.getFullYear(), now.getMonth(), 1).getTime() / 1000;
+  const thisMonth = persons.filter((p) => (p.created_at?.seconds ?? 0) >= monthStart).length;
+
+  const stats = [
+    { key: "stats.total",       value: persons.length, icon: '<svg viewBox="0 0 20 20" fill="currentColor"><path d="M9 6a3 3 0 11-6 0 3 3 0 016 0zM17 6a3 3 0 11-6 0 3 3 0 016 0zM12.93 17c.046-.327.07-.66.07-1a6.97 6.97 0 00-1.5-4.33A5 5 0 0119 16v1h-6.07zM6 11a5 5 0 015 5v1H1v-1a5 5 0 015-5z"/></svg>' },
+    { key: "stats.families",    value: familyGroups,   icon: '<svg viewBox="0 0 20 20" fill="currentColor"><path d="M10.707 2.293a1 1 0 00-1.414 0l-7 7a1 1 0 001.414 1.414L4 10.414V17a1 1 0 001 1h2a1 1 0 001-1v-2a1 1 0 011-1h2a1 1 0 011 1v2a1 1 0 001 1h2a1 1 0 001-1v-6.586l.293.293a1 1 0 001.414-1.414l-7-7z"/></svg>' },
+    { key: "stats.individuals", value: individuals,    icon: '<svg viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M10 9a3 3 0 100-6 3 3 0 000 6zm-7 9a7 7 0 1114 0H3z" clip-rule="evenodd"/></svg>' },
+    { key: "stats.thisMonth",   value: thisMonth,      icon: '<svg viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M6 2a1 1 0 00-1 1v1H4a2 2 0 00-2 2v10a2 2 0 002 2h12a2 2 0 002-2V6a2 2 0 00-2-2h-1V3a1 1 0 10-2 0v1H7V3a1 1 0 00-1-1zm0 5a1 1 0 000 2h8a1 1 0 100-2H6z" clip-rule="evenodd"/></svg>' },
+  ];
+
+  wrap.innerHTML = stats.map((s, i) => `
+    <div class="stat-card" style="animation-delay:${0.05 + i * 0.06}s">
+      <div class="stat-icon">${s.icon}</div>
+      <div class="stat-body">
+        <div class="stat-value" data-value="${s.value}">0</div>
+        <div class="stat-label">${t(s.key)}</div>
+      </div>
+    </div>`).join("");
+
+  wrap.querySelectorAll(".stat-value").forEach((el) =>
+    countUp(el, Number(el.dataset.value))
+  );
+}
+
 async function loadProfileList() {
   const wrap = document.getElementById("profileTable");
   if (!wrap) return;
@@ -315,6 +387,7 @@ async function loadProfileList() {
     const snap = await getDocs(tenantQuery(COLLECTIONS.persons));
     allProfiles = snap.docs.map((d) => ({ id: d.id, ...d.data() }));
     renderProfileTable(allProfiles);
+    renderStats(allProfiles);
   } catch (err) {
     console.error("[profiles] list failed:", err);
     wrap.innerHTML = `<p class="empty-state" style="color:var(--color-danger)">${t("empty.loadFail")}</p>`;
@@ -384,19 +457,19 @@ function profileRow(p, full = false) {
       <tr data-id="${p.id}">
         <td>
           <div class="avatar-cell">
-            <div class="avatar">${initials}</div>
+            <div class="avatar">${esc(initials)}</div>
             <div>
-              <div class="profile-name">${p.last_name || "—"}</div>
+              <div class="profile-name">${esc(p.last_name || "—")}</div>
             </div>
           </div>
         </td>
-        <td>${p.first_name || "—"}</td>
-        <td>${death}</td>
-        <td>${p.plot_section || "—"}</td>
-        <td>${p.plot_row || "—"}</td>
+        <td>${esc(p.first_name || "—")}</td>
+        <td>${esc(death)}</td>
+        <td>${esc(p.plot_section || "—")}</td>
+        <td>${esc(p.plot_row || "—")}</td>
         <td>
           <div class="table-actions">
-            <button class="btn-secondary" data-action="qr"     data-id="${p.id}" data-name="${(p.last_name || p.first_name || '').replace(/"/g,'&quot;')}" title="QR Code">QR</button>
+            <button class="btn-secondary" data-action="qr"     data-id="${p.id}" data-name="${esc(p.last_name || p.first_name || '')}" title="QR Code">QR</button>
             <button class="btn-secondary" data-action="edit"   data-id="${p.id}">${t("btn.edit")}</button>
             <button class="btn-danger"    data-action="delete" data-id="${p.id}">${t("btn.delete")}</button>
           </div>
@@ -409,16 +482,16 @@ function profileRow(p, full = false) {
     <tr data-id="${p.id}">
       <td>
         <div class="avatar-cell">
-          <div class="avatar">${initials}</div>
-          <div class="profile-name">${p.last_name || ""} ${p.first_name || ""}</div>
+          <div class="avatar">${esc(initials)}</div>
+          <div class="profile-name">${esc(p.last_name || "")} ${esc(p.first_name || "")}</div>
         </div>
       </td>
-      <td>${birth} – ${death}</td>
-      <td>${p.plot || "—"}</td>
+      <td>${esc(birth)} – ${esc(death)}</td>
+      <td>${esc(p.plot || "—")}</td>
       <td>
         <div class="table-actions">
-          <button class="btn-secondary" data-action="edit" data-id="${p.id}">Edit</button>
-          <button class="btn-danger"    data-action="delete" data-id="${p.id}">Delete</button>
+          <button class="btn-secondary" data-action="edit" data-id="${p.id}">${t("btn.edit")}</button>
+          <button class="btn-danger"    data-action="delete" data-id="${p.id}">${t("btn.delete")}</button>
         </div>
       </td>
     </tr>`;
@@ -452,7 +525,7 @@ function showQrModal(person) {
     ? (person.last_name ? `${person.last_name}家` : (person.first_name || 'Family'))
     : `${person.last_name || ''} ${person.first_name || ''}`.trim();
 
-  document.getElementById('qrModalTitle').textContent = hasFamily ? 'Family QR Code' : 'Profile QR Code';
+  document.getElementById('qrModalTitle').textContent = hasFamily ? t('qr.familyTitle') : t('qr.profileTitle');
   document.getElementById('qrFamilyLabel').textContent = label;
   document.getElementById('qrUrl').textContent = url;
 
@@ -474,13 +547,13 @@ function showQrModal(person) {
 
   document.getElementById('qrPrintBtn').onclick = () => {
     const win = window.open('', '_blank');
-    win.document.write(`<!DOCTYPE html><html><head><title>${familyLabel} QR</title>
+    win.document.write(`<!DOCTYPE html><html><head><title>${esc(label)} QR</title>
       <style>body{display:flex;flex-direction:column;align-items:center;justify-content:center;min-height:100vh;font-family:sans-serif;gap:16px}
       h1{font-size:1.8rem;margin:0}p{color:#888;font-size:0.75rem;word-break:break-all;max-width:280px;text-align:center}</style>
       </head><body>
-      <h1>${familyLabel}</h1>
+      <h1>${esc(label)}</h1>
       <img src="${canvas.toDataURL()}" width="240" height="240" />
-      <p>${url}</p>
+      <p>${esc(url)}</p>
       <script>window.onload=()=>{window.print();}<\/script>
       </body></html>`);
     win.document.close();
@@ -489,7 +562,7 @@ function showQrModal(person) {
   document.getElementById('qrDownloadBtn').onclick = () => {
     const a = document.createElement('a');
     a.href = canvas.toDataURL('image/png');
-    a.download = `${familyLabel}-qr.png`;
+    a.download = `${label}-qr.png`;
     a.click();
   };
 }
@@ -501,6 +574,7 @@ function readForm() {
   const section = get("plotSection");
   const row     = get("plotRow");
   const plot    = [section, row].filter(Boolean).join("-");
+  const bgPreset = bgPresets.find((p) => p.path === selectedBgPath) || null;
   return {
     first_name: get("firstName"),
     last_name: get("lastName"),
@@ -514,7 +588,20 @@ function readForm() {
     plot,          // combined for backward-compat display/search
     biography: get("biography"),
     related_persons: selectedRelated.map((p) => p.id),
+    background_url: bgPreset ? bgPreset.url : null,
+    background_path: bgPreset ? bgPreset.path : null,
   };
+}
+
+/** Live preview of the combined plot label ("A-12") exactly as saved/shown. */
+function updatePlotPreview() {
+  const el = document.getElementById("plotPreview");
+  if (!el) return;
+  const section = (document.getElementById("plotSection")?.value || "").trim();
+  const row     = (document.getElementById("plotRow")?.value || "").trim();
+  const plot    = [section, row].filter(Boolean).join("-");
+  el.textContent = plot || "—";
+  el.classList.toggle("empty", !plot);
 }
 
 // ── Family picker ─────────────────────────────────────────────────────────────
@@ -524,8 +611,8 @@ function renderFamilySelected() {
   if (!list) return;
   list.innerHTML = selectedRelated.map((p) => `
     <li class="family-tag">
-      <span>${p.first_name} ${p.last_name}</span>
-      <button type="button" class="family-tag-remove" data-id="${p.id}">✕</button>
+      <span>${esc(p.first_name)} ${esc(p.last_name)}</span>
+      <button type="button" class="family-tag-remove" data-id="${p.id}" aria-label="Remove">✕</button>
     </li>`).join("");
   list.querySelectorAll(".family-tag-remove").forEach((btn) => {
     btn.addEventListener("click", () => {
@@ -540,35 +627,77 @@ function initFamilyPicker() {
   const suggestions = document.getElementById("familySuggestions");
   if (!input || !suggestions) return;
 
+  let activeIndex = -1; // keyboard-highlighted suggestion
+
+  function pick(id) {
+    const p = allProfiles.find((x) => x.id === id);
+    if (p && !selectedRelated.find((r) => r.id === p.id)) {
+      selectedRelated.push({ id: p.id, first_name: p.first_name, last_name: p.last_name });
+      renderFamilySelected();
+    }
+    input.value = "";
+    suggestions.classList.add("hidden");
+    activeIndex = -1;
+  }
+
+  function highlight() {
+    suggestions.querySelectorAll(".family-suggestion-item").forEach((el, i) =>
+      el.classList.toggle("active", i === activeIndex)
+    );
+  }
+
   input.addEventListener("input", () => {
     const q = input.value.toLowerCase().trim();
+    activeIndex = -1;
     if (!q) { suggestions.classList.add("hidden"); return; }
 
     const matches = allProfiles.filter((p) => {
       if (p.id === editingPersonId) return false;
       if (selectedRelated.find((r) => r.id === p.id)) return false;
-      return `${p.first_name} ${p.last_name}`.toLowerCase().includes(q);
+      return matchesNameQuery(p, q);
     }).slice(0, 6);
 
     if (!matches.length) { suggestions.classList.add("hidden"); return; }
 
-    suggestions.innerHTML = matches.map((p) => `
+    suggestions.innerHTML = matches.map((p) => {
+      const initials = ((p.last_name || "").charAt(0) + (p.first_name || "").charAt(0)) || "✦";
+      return `
       <li class="family-suggestion-item" data-id="${p.id}">
-        ${p.first_name} ${p.last_name}${p.death_date ? ` (${p.death_date.slice(0,4)})` : ""}
-      </li>`).join("");
+        <span class="suggestion-avatar">${esc(initials)}</span>
+        <span>${esc(p.first_name)} ${esc(p.last_name)}${p.death_date ? ` <span class="suggestion-year">(${esc(p.death_date.slice(0, 4))})</span>` : ""}</span>
+      </li>`;
+    }).join("");
     suggestions.classList.remove("hidden");
 
     suggestions.querySelectorAll(".family-suggestion-item").forEach((item) => {
-      item.addEventListener("click", () => {
-        const p = allProfiles.find((x) => x.id === item.dataset.id);
-        if (p && !selectedRelated.find((r) => r.id === p.id)) {
-          selectedRelated.push({ id: p.id, first_name: p.first_name, last_name: p.last_name });
-          renderFamilySelected();
-        }
-        input.value = "";
-        suggestions.classList.add("hidden");
-      });
+      item.addEventListener("click", () => pick(item.dataset.id));
     });
+  });
+
+  // Arrow keys move the highlight, Enter picks, Escape closes — so linking a
+  // family member never requires leaving the keyboard.
+  input.addEventListener("keydown", (e) => {
+    // Enter in this search box must never submit the whole profile form.
+    if (e.key === "Enter") e.preventDefault();
+    const items = suggestions.querySelectorAll(".family-suggestion-item");
+    if (suggestions.classList.contains("hidden") || !items.length) return;
+
+    if (e.key === "ArrowDown") {
+      e.preventDefault();
+      activeIndex = (activeIndex + 1) % items.length;
+      highlight();
+    } else if (e.key === "ArrowUp") {
+      e.preventDefault();
+      activeIndex = (activeIndex - 1 + items.length) % items.length;
+      highlight();
+    } else if (e.key === "Enter") {
+      e.preventDefault();
+      const target = items[activeIndex >= 0 ? activeIndex : 0];
+      if (target) pick(target.dataset.id);
+    } else if (e.key === "Escape") {
+      suggestions.classList.add("hidden");
+      activeIndex = -1;
+    }
   });
 
   document.addEventListener("click", (e) => {
@@ -640,25 +769,6 @@ async function handleSave(e) {
     }
     removedMediaIds = [];
 
-    // Background image — upload new or delete removed
-    if (stagedBg) {
-      if (existingBgPath) {
-        try { await deleteObject(storageRef(storage, existingBgPath)); } catch {}
-      }
-      setProgress(0);
-      const { url, path } = await uploadOne(stagedBg.file, personId, setProgress);
-      await updateDoc(doc(db, COLLECTIONS.persons, personId), {
-        background_url: url,
-        background_path: path,
-      });
-    } else if (existingBgPath && !existingBgUrl) {
-      try { await deleteObject(storageRef(storage, existingBgPath)); } catch {}
-      await updateDoc(doc(db, COLLECTIONS.persons, personId), {
-        background_url: null,
-        background_path: null,
-      });
-    }
-
     const totalUploads = (stagedCover ? 1 : 0) + stagedFiles.length;
     if (totalUploads > 0) {
       setFormStatus(t("status.uploading", { n: totalUploads }), "info");
@@ -704,16 +814,14 @@ function resetForm() {
   stagedFiles.forEach((f) => URL.revokeObjectURL(f.previewUrl));
   stagedFiles = [];
   if (stagedCover) { URL.revokeObjectURL(stagedCover.previewUrl); stagedCover = null; }
-  if (stagedBg)    { URL.revokeObjectURL(stagedBg.previewUrl);    stagedBg = null; }
   existingCover = null;
   existingGallery = [];
-  existingBgUrl = null;
-  existingBgPath = null;
+  selectedBgPath = null;
   removedMediaIds = [];
   editingPersonId = null;
   renderPreviews();
   renderCoverPreview();
-  renderBgPreview();
+  renderBgPicker();
   editingPerson = null;
   selectedRelated = [];
   renderFamilySelected();
@@ -721,6 +829,7 @@ function resetForm() {
   if (saveBtn) saveBtn.textContent = t("btn.saveProfile");
   const formTitle = document.getElementById("formTitle");
   if (formTitle) formTitle.textContent = t("formTitle.new");
+  updatePlotPreview();
   clearFormStatus();
 }
 
@@ -741,8 +850,9 @@ async function loadForEdit(person) {
   set("plotSection",    person.plot_section);
   set("plotRow",        person.plot_row);
   set("biography",      person.biography);
-  existingBgUrl  = person.background_url  || null;
-  existingBgPath = person.background_path || null;
+  updatePlotPreview();
+  selectedBgPath = person.background_path || null;
+  renderBgPicker();
 
   // Restore family links
   selectedRelated = (person.related_persons || [])
@@ -753,14 +863,12 @@ async function loadForEdit(person) {
 
   // Reset media state
   if (stagedCover) { URL.revokeObjectURL(stagedCover.previewUrl); stagedCover = null; }
-  if (stagedBg)    { URL.revokeObjectURL(stagedBg.previewUrl);    stagedBg = null; }
   stagedFiles.forEach((f) => URL.revokeObjectURL(f.previewUrl));
   stagedFiles = [];
   existingCover = null;
   existingGallery = [];
   removedMediaIds = [];
   renderCoverPreview();
-  renderBgPreview();
   renderPreviews();
 
   // Load existing media from Firestore subcollection
@@ -788,12 +896,53 @@ async function loadForEdit(person) {
   if (formTitle) formTitle.textContent = t("formTitle.edit", { name });
 
   setFormStatus(t("status.editing", { name }), "info");
-  window.scrollTo({ top: 0, behavior: "smooth" });
+  // The page itself doesn't scroll — the .content pane does.
+  document.querySelector(".content")?.scrollTo({ top: 0, behavior: "smooth" });
+}
+
+// ── Confirm dialog (replaces native confirm) ─────────────────────────────────
+
+function confirmDialog({ title, body, confirmLabel, danger = true }) {
+  return new Promise((resolve) => {
+    const overlay = document.createElement("div");
+    overlay.className = "confirm-overlay";
+    overlay.innerHTML = `
+      <div class="confirm-dialog" role="alertdialog" aria-modal="true">
+        <h3 class="confirm-title">${esc(title)}</h3>
+        <p class="confirm-body">${esc(body).replaceAll("\n", "<br>")}</p>
+        <div class="confirm-actions">
+          <button type="button" class="btn-secondary" data-confirm="no">${t("btn.cancel")}</button>
+          <button type="button" class="${danger ? "btn-danger" : "btn"}" data-confirm="yes">${esc(confirmLabel)}</button>
+        </div>
+      </div>`;
+
+    function close(answer) {
+      overlay.classList.add("closing");
+      setTimeout(() => { overlay.remove(); resolve(answer); }, 140);
+    }
+
+    overlay.addEventListener("click", (e) => {
+      if (e.target === overlay) close(false);
+      const btn = e.target.closest("[data-confirm]");
+      if (btn) close(btn.dataset.confirm === "yes");
+    });
+    document.addEventListener("keydown", function onKey(e) {
+      if (e.key === "Escape") { document.removeEventListener("keydown", onKey); close(false); }
+    });
+
+    document.body.appendChild(overlay);
+    overlay.querySelector('[data-confirm="no"]')?.focus();
+  });
 }
 
 async function deleteProfile(person) {
   const name = `${person.first_name} ${person.last_name}`;
-  if (!confirm(t("confirm.delete", { name }))) return;
+  const ok = await confirmDialog({
+    title: t("confirm.deleteTitle"),
+    body: t("confirm.delete", { name }),
+    confirmLabel: t("btn.confirmDelete"),
+  });
+  if (!ok) return;
 
   setStatus(t("status.deleting"), "info");
 
@@ -817,6 +966,7 @@ async function deleteProfile(person) {
     setStatus(t("status.deletedToast", { name: `${person.first_name} ${person.last_name}` }), "success");
     allProfiles = allProfiles.filter((p) => p.id !== person.id);
     renderProfileTable(allProfiles);
+    renderStats(allProfiles);
     dashboardPersons = dashboardPersons.filter((p) => p.id !== person.id);
   } catch (err) {
     console.error("[admin] delete failed:", err);
@@ -825,6 +975,65 @@ async function deleteProfile(person) {
 }
 
 // ── File staging / upload ────────────────────────────────────────────────────
+
+// ── Background presets ───────────────────────────────────────────────────────
+// Backgrounds are 5 images shared across every profile, not an upload per
+// person. They live once at Storage path _shared/background{1..5}.{ext} so
+// every tenant uses the same set with a single upload — but a tenant can
+// still get its own distinct set later, with no code change, by uploading to
+// {TENANT_ID}/backgrounds/background{n}.{ext} instead; that path is checked
+// first and wins over the shared one when present.
+
+const BG_PRESET_COUNT = 5;
+const BG_EXTENSIONS = ["jpg", "jpeg", "png", "webp"];
+
+async function resolveBgPreset(n) {
+  for (const base of [`${TENANT_ID}/backgrounds`, `_shared`]) {
+    for (const ext of BG_EXTENSIONS) {
+      const path = `${base}/background${n}.${ext}`;
+      try {
+        const url = await getDownloadURL(storageRef(storage, path));
+        return { path, url };
+      } catch (_) { /* try next extension / fall back to shared */ }
+    }
+  }
+  return null;
+}
+
+async function loadBgPresets() {
+  const found = await Promise.all(
+    Array.from({ length: BG_PRESET_COUNT }, (_, i) => i + 1).map(resolveBgPreset)
+  );
+  bgPresets = found.filter(Boolean);
+  renderBgPicker();
+}
+
+function renderBgPicker() {
+  const wrap = document.getElementById("bgPicker");
+  if (!wrap) return;
+
+  if (!bgPresets.length) {
+    wrap.innerHTML = `<p class="field-hint">${t("bg.noneUploaded")}</p>`;
+    return;
+  }
+
+  const noneBtn = `
+    <button type="button" class="bg-picker-item bg-picker-none${selectedBgPath ? "" : " selected"}" data-path="">
+      <span>${t("bg.none")}</span>
+    </button>`;
+
+  const items = bgPresets.map((p) => `
+    <button type="button" class="bg-picker-item${selectedBgPath === p.path ? " selected" : ""}" data-path="${p.path}" style="background-image:url('${p.url}')" aria-label="${p.path}"></button>`).join("");
+
+  wrap.innerHTML = noneBtn + items;
+
+  wrap.querySelectorAll(".bg-picker-item").forEach((btn) => {
+    btn.addEventListener("click", () => {
+      selectedBgPath = btn.dataset.path || null;
+      renderBgPicker();
+    });
+  });
+}
 
 function classifyFile(file) {
   if (file.type.startsWith("video/")) return "video";
@@ -838,50 +1047,11 @@ function stageCover(file) {
   renderCoverPreview();
 }
 
-function stageBg(file) {
-  if (stagedBg) URL.revokeObjectURL(stagedBg.previewUrl);
-  stagedBg = { file, previewUrl: URL.createObjectURL(file) };
-  renderBgPreview();
-}
-
 function stageFiles(fileList) {
   for (const file of fileList) {
     stagedFiles.push({ file, type: classifyFile(file), previewUrl: URL.createObjectURL(file) });
   }
   renderPreviews();
-}
-
-function renderBgPreview() {
-  const wrap = document.getElementById("bgPreview");
-  if (!wrap) return;
-  wrap.innerHTML = "";
-
-  if (stagedBg) {
-    const img = Object.assign(document.createElement("img"), {
-      src: stagedBg.previewUrl, alt: "Background preview", className: "cover-thumb",
-    });
-    const remove = Object.assign(document.createElement("button"), {
-      className: "cover-remove", type: "button", textContent: "✕ Remove",
-    });
-    remove.addEventListener("click", () => {
-      URL.revokeObjectURL(stagedBg.previewUrl);
-      stagedBg = null;
-      renderBgPreview();
-    });
-    wrap.append(img, remove);
-  } else if (existingBgUrl) {
-    const img = Object.assign(document.createElement("img"), {
-      src: existingBgUrl, alt: "Background image", className: "cover-thumb",
-    });
-    const remove = Object.assign(document.createElement("button"), {
-      className: "cover-remove", type: "button", textContent: "✕ Remove",
-    });
-    remove.addEventListener("click", () => {
-      existingBgUrl = null;
-      renderBgPreview();
-    });
-    wrap.append(img, remove);
-  }
 }
 
 function renderCoverPreview() {
@@ -1016,6 +1186,8 @@ function syncLangButtons() {
 function retranslateDynamic() {
   syncLangButtons();
   setText("pageTitle", currentPageTitle());
+  setText("pageSubtitle", t(`sub.${currentSection}`));
+  renderStats(allProfiles);
 
   // Form chrome reflects whether we're editing
   const saveBtn = document.getElementById("saveBtn");
@@ -1060,11 +1232,22 @@ export function initAdminPortal() {
   });
   onLangChange(retranslateDynamic);
 
-  // Rail tenant badge — full name visible; title attr as a native fallback
-  // tooltip if the name is too long to fit and gets visually truncated.
+  // Sidebar tenant card — the raw tenant id is a slug ("tokyo_reien"), so
+  // prettify it for display ("Tokyo Reien") and keep the raw id in the
+  // tooltip. The signed-in admin's display name shows underneath.
   const tenantEl = document.getElementById("tenantBadge");
   if (tenantEl) {
-    tenantEl.textContent = TENANT_ID;
+    const pretty = (TENANT_ID || "")
+      .replace(/[-_]+/g, " ")
+      .replace(/\b\w/g, (c) => c.toUpperCase())
+      .trim() || "—";
+    const initials = pretty.split(/\s+/).map((w) => w.charAt(0)).slice(0, 2).join("").toUpperCase();
+    tenantEl.innerHTML = `
+      <span class="tenant-avatar">${esc(initials)}</span>
+      <span class="tenant-meta">
+        <span class="tenant-name">${esc(pretty)}</span>
+        <span class="tenant-sub">${esc(DISPLAY_NAME || ROLE || "")}</span>
+      </span>`;
     tenantEl.title = TENANT_ID;
   }
 
@@ -1099,6 +1282,11 @@ export function initAdminPortal() {
   // Form submit
   document.getElementById("profileForm")?.addEventListener("submit", handleSave);
 
+  // Live plot label preview
+  document.getElementById("plotSection")?.addEventListener("input", updatePlotPreview);
+  document.getElementById("plotRow")?.addEventListener("input", updatePlotPreview);
+  updatePlotPreview();
+
   // Cover photo dropzone
   const dropzoneCover = document.getElementById("dropzoneCover");
   const fileInputCover = document.getElementById("fileInputCover");
@@ -1121,27 +1309,8 @@ export function initAdminPortal() {
     });
   }
 
-  // Background image dropzone
-  const dropzoneBg  = document.getElementById("dropzoneBg");
-  const fileInputBg = document.getElementById("fileInputBg");
-  if (dropzoneBg && fileInputBg) {
-    fileInputBg.addEventListener("click", (e) => e.stopPropagation());
-    dropzoneBg.addEventListener("click", () => fileInputBg.click());
-    fileInputBg.addEventListener("change", (e) => {
-      if (e.target.files[0]) stageBg(e.target.files[0]);
-      fileInputBg.value = "";
-    });
-    ["dragenter", "dragover"].forEach((ev) =>
-      dropzoneBg.addEventListener(ev, (e) => { e.preventDefault(); dropzoneBg.classList.add("dragover"); })
-    );
-    ["dragleave", "drop"].forEach((ev) =>
-      dropzoneBg.addEventListener(ev, (e) => { e.preventDefault(); dropzoneBg.classList.remove("dragover"); })
-    );
-    dropzoneBg.addEventListener("drop", (e) => {
-      const file = e.dataTransfer?.files?.[0];
-      if (file && file.type.startsWith("image/")) stageBg(file);
-    });
-  }
+  // Background presets — this tenant's 5 shared backgrounds, loaded once
+  loadBgPresets();
 
   // Gallery dropzone
   const dropzone  = document.getElementById("dropzone");

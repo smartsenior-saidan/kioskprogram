@@ -3,31 +3,38 @@
    ========================================================================== */
 
 :root {
-  --color-bg:          #F0F1F3;   /* canvas behind the floating panels */
+  --color-bg:          #EEF0F3;   /* canvas behind the floating panels */
   --color-bg-elevated: #FFFFFF;   /* floating panels: sidebar, main, top bar */
   --color-bg-card:     #FFFFFF;   /* cards */
-  --color-bg-inset:    #F5F6F7;   /* recessed inputs */
-  --color-chip:        #EDEEF0;   /* pills, chips, hover surfaces */
-  --color-border:      #E1E3E6;
-  --color-border-soft: #EAEBED;
-  --color-text:        #1D1F23;
-  --color-text-muted:  #6B7076;
-  --color-accent:      #475569;   /* slate grey */
-  --color-accent-dark: #334155;   /* button hover */
+  --color-bg-inset:    #F6F7F9;   /* recessed inputs */
+  --color-chip:        #ECEEF1;   /* pills, chips, hover surfaces */
+  --color-border:      #DFE2E7;
+  --color-border-soft: #E9EBEE;
+  --color-text:        #171A1F;
+  --color-text-muted:  #667085;
+  --color-accent:      #344256;   /* deep slate ink */
+  --color-accent-dark: #232E3D;   /* button hover */
+  --color-accent-soft: rgba(52, 66, 86, 0.08);
   --color-on-accent:   #FFFFFF;   /* text on accent */
-  --color-danger:      #E5453C;
-  --color-success:     #1FA855;
+  --color-danger:      #DC3D33;
+  --color-danger-soft: rgba(220, 61, 51, 0.08);
+  --color-success:     #1B9E52;
+  --color-success-soft: rgba(27, 158, 82, 0.1);
 
+  --radius-sm: 9px;
   --radius:    12px;
   --radius-lg: 20px;
   --tap-min:   38px;
   --font-base: 15px;
 
-  --shadow:      0 14px 40px rgba(20, 22, 26, 0.1);
-  --shadow-soft: 0 2px 12px rgba(20, 22, 26, 0.06);
+  --shadow:      0 16px 44px rgba(23, 26, 31, 0.09);
+  --shadow-soft: 0 2px 12px rgba(23, 26, 31, 0.05);
+  --shadow-pop:  0 24px 64px rgba(23, 26, 31, 0.18);
+  --focus-ring:  0 0 0 3px rgba(52, 66, 86, 0.16);
 
   /* Standard easing used across the app for that "smooth" feel */
-  --ease-out: cubic-bezier(0.22, 0.61, 0.36, 1);
+  --ease-out:    cubic-bezier(0.22, 0.61, 0.36, 1);
+  --ease-spring: cubic-bezier(0.34, 1.4, 0.64, 1);
 
   --font-stack: -apple-system, BlinkMacSystemFont, "SF Pro Text", "Segoe UI", sans-serif;
   --font-serif: -apple-system, BlinkMacSystemFont, "SF Pro Display", "Segoe UI", sans-serif;
@@ -77,9 +84,11 @@ button, .btn {
   font-weight: 600;
   color: var(--color-on-accent);
   background-color: var(--color-accent);
+  background-image: linear-gradient(180deg, rgba(255, 255, 255, 0.09), rgba(255, 255, 255, 0) 55%);
   border: none;
   border-radius: var(--radius);
   cursor: pointer;
+  box-shadow: 0 1px 2px rgba(23, 26, 31, 0.18);
   transition: background-color 0.16s var(--ease-out),
               transform 0.12s var(--ease-out),
               box-shadow 0.16s var(--ease-out),
@@ -89,9 +98,13 @@ button, .btn {
   letter-spacing: -0.1px;
 }
 
-button:hover, .btn:hover  { background-color: var(--color-accent-dark); }
-button:active, .btn:active { transform: scale(0.97); }
+button:hover, .btn:hover {
+  background-color: var(--color-accent-dark);
+  box-shadow: 0 3px 10px rgba(23, 26, 31, 0.22);
+}
+button:active, .btn:active { transform: scale(0.97); box-shadow: 0 1px 2px rgba(23, 26, 31, 0.18); }
 button:disabled, .btn:disabled { opacity: 0.4; cursor: not-allowed; }
+button:focus-visible, .btn:focus-visible { outline: none; box-shadow: var(--focus-ring); }
 
 .btn-secondary {
   color: var(--color-text);
@@ -126,9 +139,12 @@ textarea {
   line-height: 1.5;
 }
 
+input:hover, textarea:hover, select:hover { border-color: #CBD0D8; }
+
 input:focus, textarea:focus, select:focus {
   border-color: var(--color-accent);
-  box-shadow: 0 0 0 3px rgba(71, 85, 105, 0.15);
+  background-color: var(--color-bg-card);
+  box-shadow: var(--focus-ring);
 }
 
 input::placeholder, textarea::placeholder { color: #A6ABB2; }
@@ -207,6 +223,26 @@ label {
 
 @keyframes panelIn {
   from { opacity: 0; transform: translateY(14px) scale(0.985); }
+  to   { opacity: 1; transform: translateY(0) scale(1); }
+}
+
+@keyframes toastIn {
+  from { opacity: 0; transform: translateY(-10px) scale(0.97); }
+  to   { opacity: 1; transform: translateY(0) scale(1); }
+}
+
+@keyframes dialogIn {
+  from { opacity: 0; transform: translateY(10px) scale(0.95); }
+  to   { opacity: 1; transform: translateY(0) scale(1); }
+}
+
+@keyframes overlayFadeOut {
+  from { opacity: 1; }
+  to   { opacity: 0; }
+}
+
+@keyframes statPop {
+  from { opacity: 0; transform: translateY(12px) scale(0.97); }
   to   { opacity: 1; transform: translateY(0) scale(1); }
 }
 

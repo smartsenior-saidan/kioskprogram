@@ -4,8 +4,8 @@
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>Admin — SmartSenior</title>
-    <link rel="stylesheet" href="css/style.css?v=5" />
-    <link rel="stylesheet" href="css/admin.css?v=6" />
+    <link rel="stylesheet" href="css/style.css?v=6" />
+    <link rel="stylesheet" href="css/admin.css?v=8" />
   </head>
   <body>
     <div class="app-shell">
@@ -14,7 +14,10 @@
       <aside class="sidebar" id="sidebar">
         <div class="sidebar-brand">
           <div class="brand-dot">S</div>
-          <span class="brand-name">SmartSenior</span>
+          <div class="brand-text">
+            <span class="brand-name">SmartSenior</span>
+            <span class="brand-sub">Admin Console</span>
+          </div>
         </div>
 
         <nav class="sidebar-nav">
@@ -55,9 +58,9 @@
         <header class="top-bar">
           <div class="top-bar-left">
             <h2 class="page-title" id="pageTitle">New Profile</h2>
+            <span class="page-subtitle" id="pageSubtitle"></span>
           </div>
           <div class="top-bar-right">
-            <div id="topStatus" class="top-status hidden"></div>
             <div class="lang-switch" id="langSwitch">
               <button type="button" data-lang="en">EN</button>
               <button type="button" data-lang="ja">日本語</button>
@@ -69,10 +72,14 @@
           </div>
         </header>
 
+        <!-- Floating toast — id kept as topStatus so setStatus() keeps working -->
+        <div id="topStatus" class="toast hidden"></div>
+
         <main class="content">
 
           <!-- ══ DASHBOARD — all profiles ══ -->
           <section id="sec-dashboard" class="section">
+            <div class="stat-cards" id="statCards"></div>
             <div class="card">
               <div class="card-row" style="margin-bottom:20px">
                 <h3 class="card-title" data-i18n="card.allProfiles">All Profiles</h3>
@@ -117,118 +124,158 @@
                 <div id="formStatus" class="form-status hidden"></div>
 
                 <form id="profileForm">
-                  <div class="form-row">
-                    <div class="field">
-                      <label for="firstName" data-i18n="form.firstName">First name *</label>
-                      <input id="firstName" type="text" required />
-                    </div>
-                    <div class="field">
-                      <label for="lastName" data-i18n="form.lastName">Last name *</label>
-                      <input id="lastName" type="text" required />
-                    </div>
-                  </div>
 
-                  <div class="form-row">
-                    <div class="field">
-                      <label for="firstNameKana" data-i18n="form.firstNameKana">First name (hiragana)</label>
-                      <input id="firstNameKana" type="text" placeholder="はなこ" data-i18n-ph="ph.firstNameKana" />
-                    </div>
-                    <div class="field">
-                      <label for="lastNameKana" data-i18n="form.lastNameKana">Last name (hiragana)</label>
-                      <input id="lastNameKana" type="text" placeholder="やまだ" data-i18n-ph="ph.lastNameKana" />
-                    </div>
-                  </div>
-                  <p class="field-hint" data-i18n="hint.nameKana">Hiragana readings let guests search by kana even if they don't know the kanji.</p>
+                  <!-- 1 ── Name & reading -->
+                  <div class="form-section">
+                    <h4 class="form-section-title">
+                      <span class="form-section-num">1</span>
+                      <span data-i18n="form.sectionIdentity">Name &amp; reading</span>
+                    </h4>
 
-                  <div class="field">
-                    <label for="kaimyo" data-i18n="form.kaimyo">Posthumous name (kaimyo)</label>
-                    <input id="kaimyo" type="text" placeholder="戒名" data-i18n-ph="ph.kaimyo" />
-                    <p class="field-hint" data-i18n="hint.kaimyo">Buddhist posthumous name, shown next to the name on the kiosk profile.</p>
-                  </div>
-
-                  <div class="form-row">
-                    <div class="field">
-                      <label for="birthDate" data-i18n="form.birthDate">Date of birth</label>
-                      <input id="birthDate" type="date" />
-                    </div>
-                    <div class="field">
-                      <label for="deathDate" data-i18n="form.deathDate">Date of passing</label>
-                      <input id="deathDate" type="date" />
-                    </div>
-                  </div>
-
-                  <div class="form-row">
-                    <div class="field">
-                      <label for="plotSection" data-i18n="form.plotSection">Section</label>
-                      <input id="plotSection" type="text" placeholder="e.g. C" data-i18n-ph="ph.plotSection" />
-                    </div>
-                    <div class="field">
-                      <label for="plotRow" data-i18n="form.plotRow">Row / plot number</label>
-                      <input id="plotRow" type="text" placeholder="e.g. 12" data-i18n-ph="ph.plotRow" />
-                    </div>
-                  </div>
-
-                  <div class="field">
-                    <label for="biography" data-i18n="form.biography">Biography</label>
-                    <textarea id="biography" placeholder="Share their life story, memories, and legacy…" data-i18n-ph="ph.biography"></textarea>
-                  </div>
-
-                  <div class="field">
-                    <label>Family members</label>
-                    <p class="field-hint">Linked profiles will appear on the kiosk so guests can navigate between family members.</p>
-                    <div class="family-picker">
-                      <div class="family-search-row">
-                        <input id="familySearch" type="search" placeholder="Search by name…" autocomplete="off" />
+                    <div class="form-row">
+                      <div class="field">
+                        <label for="firstName" data-i18n="form.firstName">First name *</label>
+                        <input id="firstName" type="text" required />
                       </div>
-                      <ul class="family-suggestions hidden" id="familySuggestions"></ul>
-                      <ul class="family-selected" id="familySelected"></ul>
+                      <div class="field">
+                        <label for="lastName" data-i18n="form.lastName">Last name *</label>
+                        <input id="lastName" type="text" required />
+                      </div>
+                    </div>
+
+                    <div class="form-row">
+                      <div class="field">
+                        <label for="firstNameKana" data-i18n="form.firstNameKana">First name (hiragana)</label>
+                        <input id="firstNameKana" type="text" placeholder="はなこ" data-i18n-ph="ph.firstNameKana" />
+                      </div>
+                      <div class="field">
+                        <label for="lastNameKana" data-i18n="form.lastNameKana">Last name (hiragana)</label>
+                        <input id="lastNameKana" type="text" placeholder="やまだ" data-i18n-ph="ph.lastNameKana" />
+                      </div>
+                    </div>
+                    <p class="field-hint" data-i18n="hint.nameKana">Hiragana readings let guests search by kana even if they don't know the kanji.</p>
+
+                    <div class="field" style="margin-top:12px">
+                      <label for="kaimyo" data-i18n="form.kaimyo">Posthumous name (kaimyo)</label>
+                      <input id="kaimyo" type="text" placeholder="戒名" data-i18n-ph="ph.kaimyo" />
+                      <p class="field-hint" data-i18n="hint.kaimyo">Buddhist posthumous name, shown next to the name on the kiosk profile.</p>
                     </div>
                   </div>
 
-                  <!-- Background image -->
-                  <div class="field">
-                    <label>Background image</label>
-                    <p class="field-hint">Full-screen background shown on the kiosk profile page for this person.</p>
-                    <div class="dropzone dropzone-bg" id="dropzoneBg">
-                      <svg class="dropzone-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path stroke-linecap="round" stroke-linejoin="round" d="M2.25 15.75l5.159-5.159a2.25 2.25 0 013.182 0l5.159 5.159m-1.5-1.5l1.409-1.409a2.25 2.25 0 013.182 0l2.909 2.909m-18 3.75h16.5a1.5 1.5 0 001.5-1.5V6a1.5 1.5 0 00-1.5-1.5H3.75A1.5 1.5 0 002.25 6v12a1.5 1.5 0 001.5 1.5zm10.5-11.25h.008v.008h-.008V8.25zm.375 0a.375.375 0 11-.75 0 .375.375 0 01.75 0z"/></svg>
-                      <p><strong>Tap to choose</strong></p>
-                      <p class="field-hint">JPG or PNG — landscape recommended</p>
-                      <input id="fileInputBg" type="file" accept="image/*" />
+                  <!-- 2 ── Dates & resting place -->
+                  <div class="form-section">
+                    <h4 class="form-section-title">
+                      <span class="form-section-num">2</span>
+                      <span data-i18n="form.sectionDates">Dates &amp; resting place</span>
+                    </h4>
+
+                    <div class="form-row">
+                      <div class="field">
+                        <label for="birthDate" data-i18n="form.birthDate">Date of birth</label>
+                        <input id="birthDate" type="date" />
+                      </div>
+                      <div class="field">
+                        <label for="deathDate" data-i18n="form.deathDate">Date of passing</label>
+                        <input id="deathDate" type="date" />
+                      </div>
                     </div>
-                    <div class="cover-preview" id="bgPreview"></div>
+
+                    <div class="form-row">
+                      <div class="field">
+                        <label for="plotSection" data-i18n="form.plotSection">Section</label>
+                        <input id="plotSection" type="text" placeholder="e.g. C" data-i18n-ph="ph.plotSection" />
+                      </div>
+                      <div class="field">
+                        <label for="plotRow" data-i18n="form.plotRow">Row / plot number</label>
+                        <input id="plotRow" type="text" placeholder="e.g. 12" data-i18n-ph="ph.plotRow" />
+                      </div>
+                    </div>
+
+                    <div class="plot-preview-row">
+                      <span data-i18n="form.plotPreview">Plot label</span>
+                      <span class="plot-preview empty" id="plotPreview">—</span>
+                    </div>
                   </div>
 
-                  <div class="media-columns">
+                  <!-- 3 ── Life story -->
+                  <div class="form-section">
+                    <h4 class="form-section-title">
+                      <span class="form-section-num">3</span>
+                      <span data-i18n="form.sectionStory">Life story</span>
+                    </h4>
 
-                    <!-- Cover photo -->
-                    <div class="field media-col">
-                      <label data-i18n="form.coverPhoto">Cover photo</label>
-                      <p class="field-hint" data-i18n="hint.coverPhoto">Single portrait photo shown on the kiosk profile card.</p>
-                      <div class="dropzone dropzone-cover" id="dropzoneCover">
-                        <svg class="dropzone-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path stroke-linecap="round" stroke-linejoin="round" d="M15.75 6a3.75 3.75 0 11-7.5 0 3.75 3.75 0 017.5 0zM4.501 20.118a7.5 7.5 0 0114.998 0A17.933 17.933 0 0112 21.75c-2.676 0-5.216-.584-7.499-1.632z"/></svg>
-                        <p><strong>Tap to choose</strong></p>
-                        <p class="field-hint">JPG or PNG</p>
-                        <input id="fileInputCover" type="file" accept="image/*" />
+                    <div class="field">
+                      <label for="biography" data-i18n="form.biography">Biography</label>
+                      <textarea id="biography" placeholder="Share their life story, memories, and legacy…" data-i18n-ph="ph.biography"></textarea>
+                    </div>
+                  </div>
+
+                  <!-- 4 ── Family links -->
+                  <div class="form-section">
+                    <h4 class="form-section-title">
+                      <span class="form-section-num">4</span>
+                      <span data-i18n="form.sectionFamily">Family links</span>
+                    </h4>
+
+                    <div class="field">
+                      <label data-i18n="form.familyMembers">Family members</label>
+                      <p class="field-hint" data-i18n="hint.familyMembers">Linked profiles will appear on the kiosk so guests can navigate between family members.</p>
+                      <div class="family-picker">
+                        <div class="family-search-row">
+                          <input id="familySearch" type="search" placeholder="Search by name…" data-i18n-ph="ph.fiSearch" autocomplete="off" />
+                        </div>
+                        <ul class="family-suggestions hidden" id="familySuggestions"></ul>
+                        <ul class="family-selected" id="familySelected"></ul>
                       </div>
-                      <div class="cover-preview" id="coverPreview"></div>
+                    </div>
+                  </div>
+
+                  <!-- 5 ── Media -->
+                  <div class="form-section">
+                    <h4 class="form-section-title">
+                      <span class="form-section-num">5</span>
+                      <span data-i18n="form.sectionMedia">Photos, video &amp; music</span>
+                    </h4>
+
+                    <!-- Background image — pick from this site's 5 shared presets -->
+                    <div class="field">
+                      <label data-i18n="form.bgImage">Background image</label>
+                      <p class="field-hint" data-i18n="hint.bgPreset">Choose one of the site's preset backgrounds — shown full-screen on the kiosk profile page.</p>
+                      <div class="bg-picker" id="bgPicker"></div>
                     </div>
 
-                    <!-- Gallery -->
-                    <div class="field media-col">
-                      <label data-i18n="form.gallery">Gallery, videos &amp; music</label>
-                      <p class="field-hint" data-i18n="hint.gallery">Photos, videos, or music — photos shown in slideshow, music plays on the profile page.</p>
-                      <div class="dropzone" id="dropzone">
-                        <svg class="dropzone-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path stroke-linecap="round" stroke-linejoin="round" d="M3 16.5v2.25A2.25 2.25 0 005.25 21h13.5A2.25 2.25 0 0021 18.75V16.5m-13.5-9L12 3m0 0l4.5 4.5M12 3v13.5"/></svg>
-                        <p data-i18n-html="dropzone.main"><strong>Tap to choose</strong> or drag files here</p>
-                        <p class="field-hint" data-i18n="dropzone.hint">JPG, PNG, MP4, WebM, MP3, AAC</p>
-                        <input id="fileInput" type="file" accept="image/*,video/*,audio/*" multiple />
-                      </div>
-                      <div class="upload-progress hidden" id="uploadProgress">
-                        <div class="progress-bar" id="progressBar"></div>
-                      </div>
-                      <div class="media-preview" id="mediaPreview"></div>
-                    </div>
+                    <div class="media-columns">
 
+                      <!-- Cover photo -->
+                      <div class="field media-col">
+                        <label data-i18n="form.coverPhoto">Cover photo</label>
+                        <p class="field-hint" data-i18n="hint.coverPhoto">Single portrait photo shown on the kiosk profile card.</p>
+                        <div class="dropzone dropzone-cover" id="dropzoneCover">
+                          <svg class="dropzone-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path stroke-linecap="round" stroke-linejoin="round" d="M15.75 6a3.75 3.75 0 11-7.5 0 3.75 3.75 0 017.5 0zM4.501 20.118a7.5 7.5 0 0114.998 0A17.933 17.933 0 0112 21.75c-2.676 0-5.216-.584-7.499-1.632z"/></svg>
+                          <p><strong data-i18n="dropzone.tap">Tap to choose</strong></p>
+                          <p class="field-hint" data-i18n="dropzone.imgHint">JPG or PNG</p>
+                          <input id="fileInputCover" type="file" accept="image/*" />
+                        </div>
+                        <div class="cover-preview" id="coverPreview"></div>
+                      </div>
+
+                      <!-- Gallery -->
+                      <div class="field media-col">
+                        <label data-i18n="form.gallery">Gallery, videos &amp; music</label>
+                        <p class="field-hint" data-i18n="hint.gallery">Photos, videos, or music — photos shown in slideshow, music plays on the profile page.</p>
+                        <div class="dropzone" id="dropzone">
+                          <svg class="dropzone-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path stroke-linecap="round" stroke-linejoin="round" d="M3 16.5v2.25A2.25 2.25 0 005.25 21h13.5A2.25 2.25 0 0021 18.75V16.5m-13.5-9L12 3m0 0l4.5 4.5M12 3v13.5"/></svg>
+                          <p data-i18n-html="dropzone.main"><strong>Tap to choose</strong> or drag files here</p>
+                          <p class="field-hint" data-i18n="dropzone.hint">JPG, PNG, MP4, WebM, MP3, AAC</p>
+                          <input id="fileInput" type="file" accept="image/*,video/*,audio/*" multiple />
+                        </div>
+                        <div class="upload-progress hidden" id="uploadProgress">
+                          <div class="progress-bar" id="progressBar"></div>
+                        </div>
+                        <div class="media-preview" id="mediaPreview"></div>
+                      </div>
+
+                    </div>
                   </div>
 
                   <div class="form-actions">
@@ -257,15 +304,15 @@
           <p class="qr-url" id="qrUrl"></p>
         </div>
         <div class="qr-modal-footer">
-          <button class="btn" id="qrPrintBtn">Print</button>
-          <button class="btn-secondary" id="qrDownloadBtn">Download PNG</button>
+          <button class="btn" id="qrPrintBtn" data-i18n="qr.print">Print</button>
+          <button class="btn-secondary" id="qrDownloadBtn" data-i18n="qr.download">Download PNG</button>
         </div>
       </div>
     </div>
 
     <script src="./js/qrcode.min.js"></script>
     <script type="module">
-      import { initAdminPortal } from "./js/admin.js?v=24";
+      import { initAdminPortal } from "./js/admin.js?v=27";
       initAdminPortal();
     </script>
   </body>
