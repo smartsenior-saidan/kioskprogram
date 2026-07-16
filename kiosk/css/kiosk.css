@@ -379,12 +379,13 @@ body.has-tenant-bg .f-member-years {
   }
 
   .search-body {
-    /* Anchor the keyboard to the left instead of centering the row. With
-       centering, the moment the results panel appeared the whole row re-
-       centered and the keyboard jumped left — so a key you were reaching for
-       moved out from under your finger. Left-anchored, the keyboard stays put
-       and the results simply fill the space to its right. */
-    justify-content: flex-start;
+    /* space-between keeps the keyboard pinned left (first item) and pushes the
+       results panel — and the scrollbar riding its right edge — to the far
+       right of the screen. The keyboard still never moves when results appear:
+       with only the keyboard present, a single flex item stays at the start,
+       same as flex-start. (Earlier this was `center`, which made the whole row
+       re-center and the keyboard jump left the moment results showed.) */
+    justify-content: space-between;
     padding-bottom: 20px;
   }
 }
@@ -486,26 +487,32 @@ body.has-tenant-bg .f-member-years {
 .search-results-panel {
   display: none;
   width: clamp(280px, 34vw, 480px);
-  padding: 8px 0 12px;
+  /* Right padding reserves a lane for the giant custom scrollbar (see
+     #resultsScrollbar) so the bar never covers a card's edge or buttons.
+     Sized for the 60px casing plus a small gap. */
+  padding: 8px 76px 12px 0;
   overflow-y: auto;
   -webkit-overflow-scrolling: touch;
-  /* Unlike other kiosk scroll areas, this one SHOWS its scrollbar: with a long
-     result list it's the only cue that more names are below the fold. Overrides
-     the hidden-scrollbar rules from .kiosk-scroll (which this element also
-     carries) — these come later in the source, so they win. */
-  scrollbar-width: thin;
-  scrollbar-color: rgba(0, 0, 0, 0.32) transparent;
+  /* Native scrollbar stays hidden — it's a thin overlay that only appears
+     while scrolling on iOS/macOS. The always-visible giant bar replaces it. */
+  -ms-overflow-style: none;
+  scrollbar-width: none;
   align-self: stretch;
 }
+.search-results-panel::-webkit-scrollbar {
+  display: none;
+}
 
+/* Opacity-only entrance. A translateX here shifted the panel's geometry for
+   the animation's duration, which threw off the fixed-position scrollbar's
+   placement (it's measured from the panel's right edge) and made the bar snap
+   sideways the first time it was touched. A fade has no such side effect. */
 @keyframes results-slide-in {
   from {
     opacity: 0;
-    transform: translateX(20px);
   }
   to {
     opacity: 1;
-    transform: translateX(0);
   }
 }
 
@@ -514,56 +521,43 @@ body.has-tenant-bg .f-member-years {
   animation: results-slide-in 0.3s cubic-bezier(0.22, 1, 0.36, 1) both;
 }
 
-.search-results-panel::-webkit-scrollbar {
-  display: block;
-  width: 10px;
-}
-.search-results-panel::-webkit-scrollbar-thumb {
-  background: rgba(0, 0, 0, 0.28);
-  border-radius: 5px;
-  /* Inset the thumb from the track edges so it reads as a pill, not a bar. */
-  border: 2px solid transparent;
-  background-clip: content-box;
-}
-.search-results-panel::-webkit-scrollbar-track {
-  background: transparent;
-}
-
-/* "▼ 続きがあります" — the always-visible "more results below" cue (see
-   index.html). position:fixed with a JS-set left/top so it floats at the
-   panel's bottom-center in every layout. translateX(-50%) is on the base rule
-   *and* baked into the bob keyframes, so it stays centered whether or not the
-   animation runs (reduced-motion disables the bob). pointer-events:none so it
-   never blocks a tap on the card underneath. */
-.results-more {
+/* ── Giant custom scrollbar ──
+   A large, always-visible, draggable scrollbar for the results list — the
+   native one is a thin overlay that's invisible at rest on iOS/macOS, so this
+   replaces it with a bar we fully control. position:fixed, placed over the
+   panel's right lane by JS from the panel's live geometry (works in every
+   layout). Shown only while the list overflows. */
+.results-scrollbar {
   position: fixed;
-  z-index: 40;
+  z-index: 41;
   display: none;
-  align-items: center;
-  gap: 6px;
-  padding: 9px 20px;
-  font-size: 1rem;
-  font-weight: 700;
-  white-space: nowrap;
-  color: #fff;
-  background: rgba(0, 0, 0, 0.62);
+  /* Wide, finger-friendly. The white casing (border + shadow) makes it read as
+     a physical slider rather than a flat bar. */
+  width: 60px;
   border-radius: 999px;
-  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.28);
-  transform: translateX(-50%);
-  pointer-events: none;
+  background: #fff;
+  border: 1.5px solid var(--color-border);
+  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.14);
+  touch-action: none; /* drag is handled manually */
 }
-.results-more.show {
-  display: flex;
-  animation: results-more-bob 1.4s ease-in-out infinite;
+.results-scrollbar.show {
+  display: block;
 }
-@keyframes results-more-bob {
-  0%,
-  100% {
-    transform: translate(-50%, 0);
-  }
-  50% {
-    transform: translate(-50%, 5px);
-  }
+.results-scrollbar-thumb {
+  position: absolute;
+  /* Inset so the white casing shows all the way around the moving thumb. */
+  left: 9px;
+  right: 9px;
+  border-radius: 999px;
+  background: rgba(0, 0, 0, 0.4);
+  min-height: 72px;
+  cursor: grab;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.22);
+  transition: background 0.12s ease;
+}
+.results-scrollbar-thumb:active {
+  cursor: grabbing;
+  background: rgba(0, 0, 0, 0.55);
 }
 
 .result-item {
@@ -698,9 +692,16 @@ body.has-tenant-bg .f-member-years {
 
 .fc-btn-detail {
   flex: 1;
+  /* min-width:0 lets the two side-by-side buttons shrink to share the card's
+     width; without it a flex item won't go below its content size and the
+     label wraps ("個人ペー / ジ"). nowrap + a width-scaled font keep each
+     label on one line even on the narrower cards left by the scrollbar lane. */
+  min-width: 0;
   height: 60px;
-  font-size: 1.3rem;
+  padding: 0 10px;
+  font-size: clamp(0.85rem, 1.35vw, 1.3rem);
   font-weight: 600;
+  white-space: nowrap;
   border-radius: 12px;
   cursor: pointer;
   min-height: var(--tap-min);
