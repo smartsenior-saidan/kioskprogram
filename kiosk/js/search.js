@@ -18,16 +18,45 @@ function isJapanese(str) {
   return /[\u3040-\u30ff\u4e00-\u9fff\uf900-\ufaff]/.test(str);
 }
 
+// Fold a kana character to its plainest form so small differences in
+// diacritics don't block a match. Voiced (dakuten) and semi-voiced
+// (handakuten) marks are removed (\u304c\u2192\u304b, \u3071\u2192\u306f) and small kana are enlarged
+// (\u3063\u2192\u3064, \u3083\u2192\u3084). This is what lets a guest who types "\u3084\u307e\u305f" still find
+// "\u3084\u307e\u3060" without having to hunt for the \u309b key on the kana keyboard.
+const KANA_FOLD = {
+  \u304c: "\u304b", \u304e: "\u304d", \u3050: "\u304f", \u3052: "\u3051", \u3054: "\u3053",
+  \u3056: "\u3055", \u3058: "\u3057", \u305a: "\u3059", \u305c: "\u305b", \u305e: "\u305d",
+  \u3060: "\u305f", \u3062: "\u3061", \u3065: "\u3064", \u3067: "\u3066", \u3069: "\u3068",
+  \u3070: "\u306f", \u3073: "\u3072", \u3076: "\u3075", \u3079: "\u3078", \u307c: "\u307b",
+  \u3071: "\u306f", \u3074: "\u3072", \u3077: "\u3075", \u307a: "\u3078", \u307d: "\u307b",
+  \u3094: "\u3046",
+  \u3041: "\u3042", \u3043: "\u3044", \u3045: "\u3046", \u3047: "\u3048", \u3049: "\u304a",
+  \u3063: "\u3064", \u3083: "\u3084", \u3085: "\u3086", \u3087: "\u3088", \u308e: "\u308f",
+};
+
+/** Fold a whole string: katakana\u2192hiragana, then strip diacritics / enlarge small kana. */
+function foldKana(str) {
+  let out = "";
+  for (const ch of str) {
+    const code = ch.codePointAt(0);
+    // Katakana (\u30a1\u2013\u30f6) \u2192 hiragana, so \u30e4\u30de\u30c0 matches \u3084\u307e\u3060 too.
+    const c = code >= 0x30a1 && code <= 0x30f6 ? String.fromCodePoint(code - 0x60) : ch;
+    out += KANA_FOLD[c] || c;
+  }
+  return out;
+}
+
 /**
  * Normalize for matching.
  * - Latin input: lowercase, strip accents, collapse whitespace.
- * - Japanese input: collapse whitespace only (preserve kana/kanji).
+ * - Japanese input: fold kana (see foldKana) + collapse whitespace.
  */
 function normalize(str) {
   const s = (str || "").toString().trim();
   if (isJapanese(s)) {
-    // Keep kanji/kana; remove full-width spaces and collapse whitespace
-    return s.replace(/[\u3000\s]+/g, " ").trim();
+    // Fold kana so dakuten/handakuten/small-kana differences don't block a
+    // match, then remove full-width spaces and collapse whitespace.
+    return foldKana(s.replace(/[\u3000\s]+/g, " ").trim());
   }
   return s
     .toLowerCase()
@@ -182,11 +211,23 @@ export async function loadPersons(forceRefresh = false) {
 
 // --- Public search API ------------------------------------------------------
 
+// Key a person by their kana reading for あいうえお ordering (surname, then
+// given name). Falls back to the kanji name when a reading isn't recorded, so
+// incomplete records still sort somewhere sensible rather than jumping around.
+// The   separator keeps a shorter surname sorting before a longer one that
+// starts with the same characters (やま before やまだ).
+function readingKey(p) {
+  const last = foldKana((p.last_name_kana || p.last_name || "").trim());
+  const first = foldKana((p.first_name_kana || p.first_name || "").trim());
+  return `${last} ${first}`;
+}
+
 /**
  * Fuzzy-search the tenant's persons.
  * @param {string} queryText raw user input
  * @param {object} [opts] { maxResults = 12 }
- * @returns {Promise<Array>} ranked person objects with a `_score` field
+ * @returns {Promise<Array>} matched person objects (each with a `_score`),
+ *   displayed in あいうえお order.
  */
 export async function searchPersons(queryText, opts = {}) {
   const { maxResults = 12 } = opts;
@@ -197,11 +238,18 @@ export async function searchPersons(queryText, opts = {}) {
   const qTokens = qFull.split(" ").filter(Boolean);
   const persons = await loadPersons();
 
-  return persons
+  // Pick the most relevant matches by score first (so the closest names are
+  // never dropped when there are many hits)…
+  const matches = persons
     .map((p) => ({ ...p, _score: scorePerson(p, qTokens, qFull) }))
     .filter((p) => p._score > 1.2) // drop weak/no matches
     .sort((a, b) => b._score - a._score)
     .slice(0, maxResults);
+
+  // …then present that set in あいうえお (kana reading) order, as requested,
+  // rather than by relevance.
+  matches.sort((a, b) => readingKey(a).localeCompare(readingKey(b), "ja"));
+  return matches;
 }
 
 // --- UI wiring (index.html) -------------------------------------------------

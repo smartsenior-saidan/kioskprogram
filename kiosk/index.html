@@ -24,7 +24,7 @@
       rel="stylesheet"
       href="https://fonts.googleapis.com/css2?family=Shippori+Mincho:wght@400;500;600;700;800&display=swap"
     />
-    <link rel="stylesheet" href="css/kiosk.css?v=75" />
+    <link rel="stylesheet" href="css/kiosk.css?v=77" />
     <!-- Pins this kiosk to its memorial site (tenant). Runs before modules. -->
     <script src="js/config.js"></script>
   </head>
@@ -113,6 +113,14 @@
           aria-live="polite"
         ></div>
       </div>
+
+      <!-- "More below" cue. Shown by JS only while the results list overflows
+           and isn't scrolled to the end. Unlike a scrollbar (overlay-only on
+           iOS/macOS), this is visible at rest on every device. Decorative, so
+           it never intercepts a tap on the card beneath it. -->
+      <div class="results-more" id="resultsMore" aria-hidden="true">
+        ▼ 続きがあります
+      </div>
     </div>
 
     <script>
@@ -138,7 +146,7 @@
         searchTitle: "名前検索（姓 → 名と入力）",
         searchSub: "姓のみ・名のみ・途中までの入力でも検索できます",
         endVisit: "参拝終了",
-        searchPlaceholder: "氏名を入力してください",
+        searchPlaceholder: "苗字・お名前で検索できます",
         searchBtn: "検索",
         spaceBtn: "スペース",
         clearAllBtn: "全消去",
@@ -172,7 +180,7 @@
         ["い", "き", "し", "ち", "に", "ひ", "み", "ゆ", "り", "を"],
         ["う", "く", "す", "つ", "ぬ", "ふ", "む", "よ", "る", "ん"],
         ["え", "け", "せ", "て", "ね", "へ", "め", null, "れ", null],
-        ["お", "こ", "そ", "と", "の", "ほ", "も", "ろ", null, null],
+        ["お", "こ", "そ", "と", "の", "ほ", "も", null, "ろ", null],
         ["ぁ", "ぃ", "ぅ", "ぇ", "ぉ", "ゃ", "ゅ", "ょ", "っ", "ゎ"],
       ];
 
@@ -386,10 +394,44 @@
         keyboardArea.classList.remove("open");
       }
 
+      // ── "More below" indicator ───────────────────────────────────────
+      // A floating "▼ 続きがあります" chip that tells guests the result list
+      // continues below the fold — the reliable cross-device version of the
+      // scrollbar cue (iOS/macOS only draw scrollbars while actively
+      // scrolling). Positioned with the panel's live geometry so it lands at
+      // the panel's bottom-center in every layout (landscape / portrait /
+      // phone). Hidden when the list fits or is already scrolled to the end.
+      const resultsMore = document.getElementById("resultsMore");
+
+      function updateMoreIndicator() {
+        const open = resultsEl.classList.contains("panel-open");
+        const overflow = resultsEl.scrollHeight - resultsEl.clientHeight;
+        const atBottom =
+          resultsEl.scrollTop + resultsEl.clientHeight >=
+          resultsEl.scrollHeight - 8;
+
+        if (!open || overflow < 24 || atBottom) {
+          resultsMore.classList.remove("show");
+          return;
+        }
+        const r = resultsEl.getBoundingClientRect();
+        resultsMore.style.left = `${r.left + r.width / 2}px`;
+        resultsMore.style.top = `${r.bottom - 44}px`;
+        resultsMore.classList.add("show");
+      }
+
+      resultsEl.addEventListener("scroll", updateMoreIndicator, {
+        passive: true,
+      });
+      window.addEventListener("resize", updateMoreIndicator);
+
       // ── Results panel: auto show/hide ────────────────────────────────
       new MutationObserver(() => {
         const hasResults = resultsEl.children.length > 0;
         resultsEl.classList.toggle("panel-open", hasResults);
+        // New results reset scrollTop to 0 — recalc after the browser has laid
+        // the cards out so overflow is measured against final heights.
+        requestAnimationFrame(updateMoreIndicator);
       }).observe(resultsEl, { childList: true });
 
       // ── Screen navigation ─────────────────────────────────────────────

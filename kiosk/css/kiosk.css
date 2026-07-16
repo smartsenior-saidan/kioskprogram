@@ -379,6 +379,12 @@ body.has-tenant-bg .f-member-years {
   }
 
   .search-body {
+    /* Anchor the keyboard to the left instead of centering the row. With
+       centering, the moment the results panel appeared the whole row re-
+       centered and the keyboard jumped left — so a key you were reaching for
+       moved out from under your finger. Left-anchored, the keyboard stays put
+       and the results simply fill the space to its right. */
+    justify-content: flex-start;
     padding-bottom: 20px;
   }
 }
@@ -483,8 +489,12 @@ body.has-tenant-bg .f-member-years {
   padding: 8px 0 12px;
   overflow-y: auto;
   -webkit-overflow-scrolling: touch;
-  -ms-overflow-style: none;
-  scrollbar-width: none;
+  /* Unlike other kiosk scroll areas, this one SHOWS its scrollbar: with a long
+     result list it's the only cue that more names are below the fold. Overrides
+     the hidden-scrollbar rules from .kiosk-scroll (which this element also
+     carries) — these come later in the source, so they win. */
+  scrollbar-width: thin;
+  scrollbar-color: rgba(0, 0, 0, 0.32) transparent;
   align-self: stretch;
 }
 
@@ -505,7 +515,55 @@ body.has-tenant-bg .f-member-years {
 }
 
 .search-results-panel::-webkit-scrollbar {
+  display: block;
+  width: 10px;
+}
+.search-results-panel::-webkit-scrollbar-thumb {
+  background: rgba(0, 0, 0, 0.28);
+  border-radius: 5px;
+  /* Inset the thumb from the track edges so it reads as a pill, not a bar. */
+  border: 2px solid transparent;
+  background-clip: content-box;
+}
+.search-results-panel::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+/* "▼ 続きがあります" — the always-visible "more results below" cue (see
+   index.html). position:fixed with a JS-set left/top so it floats at the
+   panel's bottom-center in every layout. translateX(-50%) is on the base rule
+   *and* baked into the bob keyframes, so it stays centered whether or not the
+   animation runs (reduced-motion disables the bob). pointer-events:none so it
+   never blocks a tap on the card underneath. */
+.results-more {
+  position: fixed;
+  z-index: 40;
   display: none;
+  align-items: center;
+  gap: 6px;
+  padding: 9px 20px;
+  font-size: 1rem;
+  font-weight: 700;
+  white-space: nowrap;
+  color: #fff;
+  background: rgba(0, 0, 0, 0.62);
+  border-radius: 999px;
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.28);
+  transform: translateX(-50%);
+  pointer-events: none;
+}
+.results-more.show {
+  display: flex;
+  animation: results-more-bob 1.4s ease-in-out infinite;
+}
+@keyframes results-more-bob {
+  0%,
+  100% {
+    transform: translate(-50%, 0);
+  }
+  50% {
+    transform: translate(-50%, 5px);
+  }
 }
 
 .result-item {
@@ -556,11 +614,29 @@ body.has-tenant-bg .f-member-years {
   margin-top: 2px;
 }
 
+/* "Not found" needs to read as a clear dead-end, not a faint gray line — a
+   guest who mistypes should immediately see nothing matched. Larger + bold +
+   a gentle pulse draws the eye; the global prefers-reduced-motion rule stops
+   the pulse for anyone sensitive to motion. Kept to a strong dark tone rather
+   than alarm-red to suit the memorial setting. */
 .results-empty {
   text-align: center;
-  padding: 32px 20px;
-  font-size: 1.2rem;
-  color: var(--color-text-muted);
+  padding: 40px 24px;
+  font-size: clamp(1.5rem, 2.6vw, 2rem);
+  font-weight: 700;
+  line-height: 1.5;
+  color: var(--color-text);
+  animation: results-empty-pulse 1.2s ease-in-out infinite;
+}
+
+@keyframes results-empty-pulse {
+  0%,
+  100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0.45;
+  }
 }
 
 .results-count {
