@@ -15,7 +15,7 @@
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
     <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Shippori+Mincho:wght@400;500;600;700;800&display=swap" />
-    <link rel="stylesheet" href="css/kiosk.css?v=87" />
+    <link rel="stylesheet" href="css/kiosk.css?v=88" />
     <script src="js/config.js"></script>
     <style>
       /* ── Slideshow nav bar ─────────────────────────────────────────────── */
@@ -69,6 +69,31 @@
         border: 1.5px solid var(--color-border);
         box-shadow: 0 2px 8px rgba(0,0,0,0.07);
       }
+
+      /* Prev / next page arrows, flanking the centered stop button */
+      .sld-nav-btn {
+        position: absolute;
+        top: 50%;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        width: 52px;
+        height: 52px;
+        padding: 0;
+        color: var(--color-text);
+        background: #fff;
+        border: 1.5px solid var(--color-border);
+        border-radius: 50%;
+        box-shadow: 0 2px 8px rgba(0,0,0,0.07);
+        cursor: pointer;
+        transition: background 0.12s ease;
+        flex-shrink: 0;
+      }
+      .sld-nav-btn svg { width: 22px; height: 22px; fill: none; stroke: currentColor; stroke-width: 2.2; stroke-linecap: round; stroke-linejoin: round; }
+      .sld-prev-btn { left: 50%; transform: translate(calc(-50% - 76px), -50%); }
+      .sld-next-btn { left: 50%; transform: translate(calc(-50% + 76px), -50%); }
+      .sld-prev-btn:active { background: #f2f2f2; transform: translate(calc(-50% - 76px), -50%) scale(0.97); }
+      .sld-next-btn:active { background: #f2f2f2; transform: translate(calc(-50% + 76px), -50%) scale(0.97); }
 
       /* Move back button to top-left (profile default is bottom-left).
          Tablet only — on mobile kiosk.css floats it as a circle at 16px. */
@@ -136,7 +161,13 @@
 
     <!-- Bottom navigation bar -->
     <div class="sld-nav" id="sldNav" style="display:none">
+      <button class="sld-nav-btn sld-prev-btn" id="sldPrev" aria-label="前へ">
+        <svg viewBox="0 0 20 20"><path d="M12.5 4l-6 6 6 6"/></svg>
+      </button>
       <button class="sld-stop-btn" id="sldStop" aria-label="停止"></button>
+      <button class="sld-nav-btn sld-next-btn" id="sldNext" aria-label="次へ">
+        <svg viewBox="0 0 20 20"><path d="M7.5 4l6 6-6 6"/></svg>
+      </button>
       <span class="sld-counter" id="sldCounter">1 / 1</span>
     </div>
 
@@ -439,6 +470,16 @@
         autoPlaying = !autoPlaying;
         updateStopBtn();
         if (autoPlaying) startAuto(); else stopAuto();
+      });
+
+      // Prev / next page (wrap around, like auto-advance)
+      document.getElementById('sldPrev').addEventListener('click', () => {
+        if (isAnimating || !members.length) return;
+        goTo((currentIndex - 1 + members.length) % members.length);
+      });
+      document.getElementById('sldNext').addEventListener('click', () => {
+        if (isAnimating || !members.length) return;
+        goTo((currentIndex + 1) % members.length);
       });
 
       // Load family

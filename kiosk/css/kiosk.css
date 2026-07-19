@@ -141,7 +141,7 @@ body.bg-loading {
 /* ── Mobile home screen ──
    Japanese has no spaces, so a line can break between *any* two characters.
    At phone widths the kiosk sizes overflowed and stranded a single character
-   on its own line ("ご来館ありがとうございま / す。"). Each string below is
+   on its own line ("ご来園ありがとうございま / す。"). Each string below is
    sized to fit one line at 360px; text-wrap:balance evens out anything that
    still has to wrap rather than leaving an orphan. ── */
 @media (max-width: 700px) {
@@ -828,11 +828,17 @@ body.has-tenant-bg .f-member-years {
   box-shadow: 0 0 0 rgba(0, 0, 0, 0.1);
 }
 
-/* Dakuten / handakuten — gray modifier, larger label */
+/* Dakuten / handakuten — white key (not gray), larger label */
 .kb-key.action[data-action="dakuten"],
 .kb-key.action[data-action="handakuten"] {
+  background: #ffffff;
   font-size: 1.35rem;
   line-height: 1;
+}
+
+.kb-key.action[data-action="dakuten"]:active,
+.kb-key.action[data-action="handakuten"]:active {
+  background: #a8a8a8;
 }
 
 /* Bottom bar: space + clear */
@@ -968,7 +974,7 @@ body.has-tenant-bg .f-member-years {
 
 .m-btn-back:hover,
 .m-btn-end:hover {
-  background: rgba(0, 0, 0, 0.04);
+  background: #f2f2f2;
 }
 
 .m-btn-back:active,
@@ -1478,10 +1484,10 @@ body.has-tenant-bg .f-member-years {
 }
 
 .m-link:hover {
-  background: rgba(0, 0, 0, 0.03);
+  background: #f2f2f2;
 }
 .m-link:active {
-  background: rgba(0, 0, 0, 0.07);
+  background: #e6e6e6;
 }
 
 /* ── Biography overlay ── */

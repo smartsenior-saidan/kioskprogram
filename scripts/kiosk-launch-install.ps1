@@ -37,7 +37,11 @@ function Invoke-DriverInstall {
     param(
         [string]  $Name,        # friendly name for the log
         [string]  $Exe,         # executable to launch (e.g. the .exe or msiexec.exe)
-        [string[]]$Args,        # arguments for that executable
+        # NOTE: never name this $Args — that collides with PowerShell's reserved
+        # automatic $args variable, which silently arrives EMPTY here, so
+        # Start-Process throws "ArgumentList is null or empty" and every driver
+        # install is skipped. Use $ArgList.
+        [string[]]$ArgList,     # arguments for that executable
         [string]  $VerifyPath,  # file whose presence gates the install (the driver payload)
         [int]     $TimeoutSec = 180
     )
@@ -46,7 +50,7 @@ function Invoke-DriverInstall {
             Write-Log "WARNING: $Name payload not found at $VerifyPath — skipping (was the drivers folder included in the package?)"
             return
         }
-        $proc = Start-Process -FilePath $Exe -ArgumentList $Args -PassThru
+        $proc = Start-Process -FilePath $Exe -ArgumentList $ArgList -PassThru
         Wait-Process -Id $proc.Id -Timeout $TimeoutSec -ErrorAction SilentlyContinue
         if (-not $proc.HasExited) {
             Write-Log "WARNING: $Name install still running after ${TimeoutSec}s — killing and continuing"
@@ -73,7 +77,7 @@ try {
     # drivers\ActiveUSBCOM_2207_J\ActiveUSBCOM_UsersGuide.pdf section 2.1.5.
     Invoke-DriverInstall -Name "QR scanner driver" `
         -Exe "$PSScriptRoot\drivers\ActiveUSBCOM_2207_J\Install.exe" `
-        -Args @("-S") `
+        -ArgList @("-S") `
         -VerifyPath "$PSScriptRoot\drivers\ActiveUSBCOM_2207_J\Install.exe"
 
     # 2. Install the Elecom MR-ICA001BK (CIR315) NFC reader driver. Same
@@ -83,7 +87,7 @@ try {
     $elecomMsi = "$PSScriptRoot\drivers\ELECOM_MR-ICA001_CIR315\Package\CIR315DriverInstallerx64.msi"
     Invoke-DriverInstall -Name "Elecom NFC reader driver" `
         -Exe "msiexec.exe" `
-        -Args @("/i", "`"$elecomMsi`"", "/quiet", "/norestart") `
+        -ArgList @("/i", "`"$elecomMsi`"", "/quiet", "/norestart") `
         -VerifyPath $elecomMsi
 
     # 3. Install the I-O DATA USB-NFC3 "ぴタッチ" NFC reader driver (AB Circle
@@ -93,7 +97,7 @@ try {
     $nfc3Msi = "$PSScriptRoot\drivers\IODATA_USB-NFC3\Package\ABCDriverInstallerx64.msi"
     Invoke-DriverInstall -Name "USB-NFC3 reader driver" `
         -Exe "msiexec.exe" `
-        -Args @("/i", "`"$nfc3Msi`"", "/quiet", "/norestart") `
+        -ArgList @("/i", "`"$nfc3Msi`"", "/quiet", "/norestart") `
         -VerifyPath $nfc3Msi
 
     # 4. NFC/QR reader daemon setup — delegates to the existing, already-tested
