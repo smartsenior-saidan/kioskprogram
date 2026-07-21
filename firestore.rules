@@ -53,6 +53,13 @@ service cloud.firestore {
       }
     }
 
+    // ── Family groups (admin-created, named; may have zero members) ─────────
+    match /families/{familyId} {
+      allow read:          if true;                                   // public kiosk (future use)
+      allow create:        if ownsTenant(request.resource.data.tenant_id);
+      allow update, delete: if ownsTenant(resource.data.tenant_id);
+    }
+
     // ── Tenant configuration ────────────────────────────────────────────────
     match /tenants/{tenantId} {
       allow read:  if true;   // kiosk reads accent_color, bgm_path, name

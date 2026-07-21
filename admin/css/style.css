@@ -10,16 +10,19 @@
   --color-chip:        #ECEEF1;   /* pills, chips, hover surfaces */
   --color-border:      #DFE2E7;
   --color-border-soft: #E9EBEE;
-  --color-text:        #171A1F;
-  --color-text-muted:  #667085;
-  --color-accent:      #344256;   /* deep slate ink */
-  --color-accent-dark: #232E3D;   /* button hover */
-  --color-accent-soft: rgba(52, 66, 86, 0.08);
+  --color-text:        #17181A;
+  --color-text-muted:  #6B7078;
+  --color-accent:      #3F4247;   /* neutral graphite ink */
+  --color-accent-dark: #2A2C30;   /* button hover */
+  --color-accent-soft: rgba(63, 66, 71, 0.08);
   --color-on-accent:   #FFFFFF;   /* text on accent */
   --color-danger:      #DC3D33;
   --color-danger-soft: rgba(220, 61, 51, 0.08);
   --color-success:     #1B9E52;
   --color-success-soft: rgba(27, 158, 82, 0.1);
+
+  --hover-surface: rgba(23, 26, 31, 0.045);  /* generic hover tint (buttons, controls) */
+  --hover-row:     rgba(23, 26, 31, 0.025);  /* table row hover */
 
   --radius-sm: 9px;
   --radius:    12px;
@@ -30,14 +33,47 @@
   --shadow:      0 16px 44px rgba(23, 26, 31, 0.09);
   --shadow-soft: 0 2px 12px rgba(23, 26, 31, 0.05);
   --shadow-pop:  0 24px 64px rgba(23, 26, 31, 0.18);
-  --focus-ring:  0 0 0 3px rgba(52, 66, 86, 0.16);
+  --focus-ring:  0 0 0 3px rgba(63, 66, 71, 0.18);
 
   /* Standard easing used across the app for that "smooth" feel */
   --ease-out:    cubic-bezier(0.22, 0.61, 0.36, 1);
   --ease-spring: cubic-bezier(0.34, 1.4, 0.64, 1);
 
-  --font-stack: -apple-system, BlinkMacSystemFont, "SF Pro Text", "Segoe UI", sans-serif;
-  --font-serif: -apple-system, BlinkMacSystemFont, "SF Pro Display", "Segoe UI", sans-serif;
+  --font-stack: "Inter", -apple-system, BlinkMacSystemFont, "Segoe UI", "Helvetica Neue", Arial, sans-serif;
+  --font-serif: "Inter", -apple-system, BlinkMacSystemFont, "Segoe UI", "Helvetica Neue", Arial, sans-serif;
+}
+
+/* ---- Dark theme -----------------------------------------------------------
+   Applied when <html data-theme="dark"> is set (a small inline script in the
+   page <head> resolves the stored preference / system setting before paint,
+   and the top-bar toggle flips it). Only the tokens change; every component
+   is built on these variables, so the whole console re-themes from here. */
+:root[data-theme="dark"] {
+  --color-bg:          #141517;   /* canvas behind the floating panels */
+  --color-bg-elevated: #1C1D20;   /* sidebar, main, top bar */
+  --color-bg-card:     #1C1D20;   /* cards */
+  --color-bg-inset:    #26282C;   /* recessed inputs */
+  --color-chip:        #2C2E33;   /* pills, chips, hover surfaces */
+  --color-border:      #35383D;
+  --color-border-soft: #292B2F;
+  --color-text:        #ECEDEE;
+  --color-text-muted:  #9CA1A8;
+  --color-accent:      #E6E7E9;   /* light silver ink — reads on dark */
+  --color-accent-dark: #FFFFFF;   /* button hover (brighter) */
+  --color-accent-soft: rgba(230, 232, 235, 0.12);
+  --color-on-accent:   #1B1C1F;   /* dark text on the light accent */
+  --color-danger:      #F1685E;
+  --color-danger-soft: rgba(241, 104, 94, 0.15);
+  --color-success:     #45C47C;
+  --color-success-soft: rgba(69, 196, 124, 0.16);
+
+  --hover-surface: rgba(255, 255, 255, 0.06);
+  --hover-row:     rgba(255, 255, 255, 0.04);
+
+  --shadow:      0 16px 44px rgba(0, 0, 0, 0.55);
+  --shadow-soft: 0 2px 12px rgba(0, 0, 0, 0.4);
+  --shadow-pop:  0 24px 64px rgba(0, 0, 0, 0.65);
+  --focus-ring:  0 0 0 3px rgba(230, 232, 235, 0.22);
 }
 
 *, *::before, *::after { box-sizing: border-box; }

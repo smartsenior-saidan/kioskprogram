@@ -5,7 +5,7 @@
 *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
 
 body {
-  font-family: -apple-system, BlinkMacSystemFont, "SF Pro Text", "Segoe UI", sans-serif;
+  font-family: "Inter", -apple-system, BlinkMacSystemFont, "Segoe UI", "Helvetica Neue", Arial, sans-serif;
   font-size: 15px;
   background-color: #F0F1F3;
   color: #1D1F23;
@@ -51,7 +51,7 @@ body {
   width: 56px;
   height: 56px;
   border-radius: 15px;
-  background: #475569;
+  background: #3F4247;
   color: #FFFFFF;
   font-size: 1.6rem;
   font-weight: 800;
@@ -60,7 +60,7 @@ body {
   justify-content: center;
   letter-spacing: -1px;
   margin-bottom: 14px;
-  box-shadow: 0 4px 14px rgba(71, 85, 105, 0.3);
+  box-shadow: 0 4px 14px rgba(63, 66, 71, 0.3);
 }
 
 .login-title {
@@ -89,7 +89,7 @@ body {
 
 .login-status.error   { background: rgba(229,69,60,0.08);  color: #C93B33; border: 1px solid rgba(229,69,60,0.25); }
 .login-status.success { background: rgba(31,168,85,0.08);  color: #16813D; border: 1px solid rgba(31,168,85,0.25); }
-.login-status.info    { background: rgba(71,85,105,0.08);  color: #334155; border: 1px solid rgba(71,85,105,0.22); }
+.login-status.info    { background: rgba(63, 66, 71,0.08);  color: #2A2C30; border: 1px solid rgba(63, 66, 71,0.22); }
 
 /* ---- Form fields ----------------------------------------------------------- */
 
@@ -122,8 +122,8 @@ body {
 .field input::placeholder { color: #A6ABB2; }
 
 .field input:focus {
-  border-color: #475569;
-  box-shadow: 0 0 0 3px rgba(71, 85, 105, 0.15);
+  border-color: #3F4247;
+  box-shadow: 0 0 0 3px rgba(63, 66, 71, 0.15);
 }
 
 /* ---- Buttons --------------------------------------------------------------- */
@@ -132,7 +132,7 @@ body {
   width: 100%;
   height: 46px;
   margin-top: 8px;
-  background: #475569;
+  background: #3F4247;
   color: #FFFFFF;
   font-family: inherit;
   font-size: 0.95rem;
@@ -144,7 +144,7 @@ body {
   letter-spacing: -0.1px;
 }
 
-.btn-primary:hover { background: #334155; }
+.btn-primary:hover { background: #2A2C30; }
 .btn-primary:active { transform: scale(0.98); }
 
 .btn-primary:disabled {
@@ -167,8 +167,58 @@ body {
   padding: 4px;
 }
 
-.btn-forgot:hover { color: #475569; text-decoration: underline; }
+.btn-forgot:hover { color: #3F4247; text-decoration: underline; }
 
 /* ---- Hidden ---------------------------------------------------------------- */
 
 .hidden { display: none !important; }
+
+/* ---- Dark theme -----------------------------------------------------------
+   Set by the inline <head> script (data-theme="dark") from the stored choice
+   or the system preference — the same key the admin console toggle writes. */
+:root[data-theme="dark"] body {
+  background-color: #141517;
+  color: #ECEDEE;
+}
+
+:root[data-theme="dark"] .login-card {
+  background: #1C1D20;
+  border-color: #35383D;
+  box-shadow: 0 14px 40px rgba(0, 0, 0, 0.55);
+}
+
+:root[data-theme="dark"] .login-logo {
+  background: #E6E7E9;
+  color: #1B1C1F;
+  box-shadow: 0 4px 14px rgba(0, 0, 0, 0.45);
+}
+
+:root[data-theme="dark"] .login-title { color: #ECEDEE; }
+:root[data-theme="dark"] .login-subtitle { color: #9CA1A8; }
+:root[data-theme="dark"] .field label { color: #ECEDEE; }
+
+:root[data-theme="dark"] .field input {
+  background: #26282C;
+  border-color: #35383D;
+  color: #ECEDEE;
+}
+
+:root[data-theme="dark"] .field input::placeholder { color: #7C818A; }
+
+:root[data-theme="dark"] .field input:focus {
+  border-color: #E6E7E9;
+  box-shadow: 0 0 0 3px rgba(230, 232, 235, 0.2);
+}
+
+:root[data-theme="dark"] .btn-primary {
+  background: #E6E7E9;
+  color: #1B1C1F;
+}
+:root[data-theme="dark"] .btn-primary:hover { background: #FFFFFF; }
+
+:root[data-theme="dark"] .btn-forgot { color: #9CA1A8; }
+:root[data-theme="dark"] .btn-forgot:hover { color: #E6E7E9; }
+
+:root[data-theme="dark"] .login-status.error   { background: rgba(241,104,94,0.14);  color: #F1857D; border-color: rgba(241,104,94,0.3); }
+:root[data-theme="dark"] .login-status.success { background: rgba(69,196,124,0.14);   color: #5BD08D; border-color: rgba(69,196,124,0.3); }
+:root[data-theme="dark"] .login-status.info    { background: rgba(230,232,235,0.08);  color: #C9CBCE; border-color: rgba(230,232,235,0.22); }

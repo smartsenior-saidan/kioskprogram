@@ -50,7 +50,7 @@
   align-items: center;
   justify-content: center;
   flex-shrink: 0;
-  box-shadow: 0 6px 14px rgba(35, 46, 61, 0.28);
+  box-shadow: 0 6px 14px rgba(42, 44, 48, 0.28);
 }
 
 .brand-text { display: flex; flex-direction: column; line-height: 1.2; min-width: 0; }
@@ -136,7 +136,7 @@
 .nav-item.active {
   background: linear-gradient(150deg, var(--color-accent) 0%, var(--color-accent-dark) 100%);
   color: var(--color-on-accent);
-  box-shadow: 0 6px 16px rgba(35, 46, 61, 0.24);
+  box-shadow: 0 6px 16px rgba(42, 44, 48, 0.24);
   transform: none;
 }
 .nav-item.active::before { height: 18px; }
@@ -186,7 +186,7 @@
   width: 36px;
   height: 36px;
   border-radius: 10px;
-  background: linear-gradient(150deg, #8FA1B8 0%, var(--color-accent) 100%);
+  background: linear-gradient(150deg, #9CA0A6 0%, var(--color-accent) 100%);
   color: #fff;
   font-size: 0.8rem;
   font-weight: 700;
@@ -252,6 +252,14 @@
 
 .top-bar-left { display: flex; flex-direction: column; gap: 1px; min-width: 0; }
 
+/* Page title + memorial-site name sit inline, same size, split by a divider */
+.page-title-row {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  min-width: 0;
+}
+
 .page-title {
   font-size: 1.2rem;
   font-weight: 700;
@@ -261,6 +269,36 @@
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
+  flex-shrink: 0;
+}
+
+/* The memorial site the admin is currently managing — same size as the title,
+   muted, with a thin divider so it reads as context, not a second heading. */
+.page-site {
+  position: relative;
+  padding-left: 13px;
+  font-size: 1.2rem;
+  font-weight: 700;
+  color: var(--color-text-muted);
+  letter-spacing: -0.3px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  min-width: 0;
+}
+
+.page-site:empty { display: none; }
+
+.page-site::before {
+  content: "";
+  position: absolute;
+  left: 0;
+  top: 50%;
+  transform: translateY(-50%);
+  width: 1.5px;
+  height: 18px;
+  border-radius: 999px;
+  background: var(--color-border);
 }
 
 .page-subtitle {
@@ -370,6 +408,33 @@
   box-shadow: none;
 }
 
+/* Square icon button in the top bar (theme toggle) */
+.topbar-icon-btn {
+  width: 38px;
+  height: 38px;
+  min-width: 38px;
+  min-height: 38px;
+  padding: 0;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  background: transparent;
+  background-image: none;
+  color: var(--color-text-muted);
+  border: 1px solid var(--color-border);
+  border-radius: 11px;
+  box-shadow: none;
+  transition: background 0.14s var(--ease-out), color 0.14s var(--ease-out), border-color 0.14s var(--ease-out);
+}
+
+.topbar-icon-btn svg { width: 18px; height: 18px; }
+
+.topbar-icon-btn:hover {
+  background: var(--hover-surface);
+  color: var(--color-text);
+  box-shadow: none;
+}
+
 /* ---- Content ---------------------------------------------------------------- */
 
 .content {
@@ -416,6 +481,44 @@
 .stat-card:hover {
   transform: translateY(-2px);
   box-shadow: 0 8px 24px rgba(23, 26, 31, 0.09);
+}
+
+/* Clickable stat cards (Family groups / Individuals) drill into their section */
+.stat-card-link { cursor: pointer; }
+
+.stat-card-link:hover {
+  border-color: var(--color-accent);
+  box-shadow: 0 8px 24px rgba(23, 26, 31, 0.12);
+}
+
+.stat-card-link:hover .stat-icon {
+  background: var(--color-accent);
+  color: var(--color-on-accent);
+}
+
+.stat-card-link:active { transform: translateY(0); }
+
+.stat-card-link:focus-visible {
+  outline: none;
+  border-color: var(--color-accent);
+  box-shadow: var(--focus-ring);
+}
+
+/* A subtle arrow that slides in on hover, hinting the card is a link */
+.stat-card-link .stat-go {
+  margin-left: auto;
+  align-self: center;
+  color: var(--color-text-muted);
+  opacity: 0;
+  transform: translateX(-4px);
+  transition: opacity 0.16s var(--ease-out), transform 0.16s var(--ease-out);
+  flex-shrink: 0;
+}
+
+.stat-card-link:hover .stat-go,
+.stat-card-link:focus-visible .stat-go {
+  opacity: 1;
+  transform: translateX(0);
 }
 
 .stat-icon {
@@ -487,10 +590,14 @@
 
 .card-row-actions input[type="search"] {
   min-height: 38px;
-  padding: 0 16px;
+  padding: 0 16px 0 38px;
   font-size: 0.88rem;
-  max-width: 230px;
-  background: var(--color-bg-inset);
+  max-width: 240px;
+  background-color: var(--color-bg-inset);
+  background-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 20 20' fill='%23A6ABB2'><path fill-rule='evenodd' d='M8 4a4 4 0 100 8 4 4 0 000-8zM2 8a6 6 0 1110.89 3.476l4.817 4.817a1 1 0 01-1.414 1.414l-4.816-4.816A6 6 0 012 8z' clip-rule='evenodd'/></svg>");
+  background-repeat: no-repeat;
+  background-position: 14px center;
+  background-size: 15px;
   border-color: var(--color-border);
   border-radius: 999px;
 }
@@ -538,7 +645,7 @@
 }
 
 .mini-table tr:last-child td { border-bottom: none; }
-.mini-table tr:hover td { background: rgba(23, 26, 31, 0.025); }
+.mini-table tr:hover td { background: var(--hover-row); }
 
 /* ---- Cascading row entrance (tables + family accordion) -------------------------- */
 
@@ -695,7 +802,7 @@
   height: 36px;
   border-radius: 50%;
   background: var(--color-accent-soft);
-  border: 1.5px solid rgba(52, 66, 86, 0.16);
+  border: 1.5px solid rgba(63, 66, 71, 0.16);
   display: flex;
   align-items: center;
   justify-content: center;
@@ -749,7 +856,7 @@
 }
 
 .profiles-table tr:last-child td { border-bottom: none; }
-.profiles-table tbody tr:hover td { background: rgba(23, 26, 31, 0.025); }
+.profiles-table tbody tr:hover td { background: var(--hover-row); }
 
 .profiles-table th.sortable:hover { color: var(--color-accent); }
 .sort-icon { margin-left: 4px; opacity: 0.35; font-size: 0.75em; }
@@ -760,6 +867,36 @@
   padding: 44px 0;
   color: var(--color-text-muted);
   font-size: 0.9rem;
+}
+
+/* ---- Family drill-down (families list → one family's members) --------------- */
+
+.drill-header {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  margin-bottom: 16px;
+}
+
+.drill-title {
+  font-size: 1rem;
+  font-weight: 700;
+  color: var(--color-text);
+  letter-spacing: -0.2px;
+}
+
+/* Chevron on each family row, hinting it drills into the members */
+.drill-chevron {
+  width: 28px;
+  text-align: right;
+  color: var(--color-text-muted);
+  font-size: 1.15rem;
+  transition: transform 0.14s var(--ease-out), color 0.14s var(--ease-out);
+}
+
+tr[data-family]:hover .drill-chevron {
+  color: var(--color-accent);
+  transform: translateX(3px);
 }
 
 /* ---- Form layout ----------------------------------------------------------------------- */
@@ -840,7 +977,7 @@
   padding: 3px 12px;
   border-radius: 999px;
   background: var(--color-accent-soft);
-  border: 1px solid rgba(52, 66, 86, 0.18);
+  border: 1px solid rgba(63, 66, 71, 0.18);
   color: var(--color-accent);
   font-size: 0.85rem;
   font-weight: 700;
@@ -859,7 +996,7 @@
   animation: fadeSlideIn 0.3s var(--ease-out) both;
 }
 
-.form-status.info    { background: var(--color-accent-soft);  color: var(--color-accent-dark); border: 1px solid rgba(52, 66, 86, 0.2); }
+.form-status.info    { background: var(--color-accent-soft);  color: var(--color-accent-dark); border: 1px solid rgba(63, 66, 71, 0.2); }
 .form-status.success { background: var(--color-success-soft); color: #157A40; border: 1px solid rgba(27, 158, 82, 0.3); }
 .form-status.error   { background: var(--color-danger-soft);  color: #C0362D; border: 1px solid rgba(220, 61, 51, 0.3); }
 
@@ -933,7 +1070,7 @@
 .progress-bar {
   height: 100%;
   width: 0%;
-  background: linear-gradient(90deg, var(--color-accent) 0%, #5B708C 100%);
+  background: linear-gradient(90deg, var(--color-accent) 0%, #6C6F75 100%);
   border-radius: 999px;
   transition: width 0.2s ease;
 }
@@ -1174,7 +1311,7 @@
   box-shadow: none;
 }
 
-.btn-secondary:hover { background: rgba(23, 26, 31, 0.04); box-shadow: none; }
+.btn-secondary:hover { background: var(--hover-surface); box-shadow: none; }
 
 .btn-danger  { background: var(--color-danger); background-image: none; color: #fff; }
 .btn-danger:hover { background: #C6362C; }
@@ -1282,7 +1419,7 @@
   align-items: center;
   gap: 6px;
   background: var(--color-accent-soft);
-  border: 1px solid rgba(52, 66, 86, 0.22);
+  border: 1px solid rgba(63, 66, 71, 0.22);
   border-radius: 20px;
   padding: 4px 10px 4px 12px;
   font-size: 0.85rem;
@@ -1459,3 +1596,13 @@
   border-color: #D0D3D8;
 }
 .qr-modal .btn-secondary:hover { background: #F1F3F5; }
+
+/* ---- Dark-mode component tweaks -------------------------------------------- */
+
+/* The active language pill sits on the (darker) chip track, so give it a
+   lighter surface in dark mode to keep reading as "raised / selected". */
+:root[data-theme="dark"] .lang-switch button.active {
+  background: #3B3E44;
+  color: var(--color-text);
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.4);
+}

@@ -4,8 +4,21 @@
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>Admin — SmartSenior</title>
-    <link rel="stylesheet" href="css/style.css?v=6" />
-    <link rel="stylesheet" href="css/admin.css?v=10" />
+    <!-- Resolve theme before paint to avoid a flash of the wrong mode -->
+    <script>
+      (function () {
+        try {
+          var s = localStorage.getItem("ss_theme");
+          var t = s || (window.matchMedia && window.matchMedia("(prefers-color-scheme: dark)").matches ? "dark" : "light");
+          document.documentElement.dataset.theme = t;
+        } catch (e) {}
+      })();
+    </script>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" />
+    <link rel="stylesheet" href="css/style.css?v=8" />
+    <link rel="stylesheet" href="css/admin.css?v=15" />
   </head>
   <body>
     <div class="app-shell">
@@ -27,29 +40,17 @@
             </span>
             <span data-i18n="nav.dashboard">Dashboard</span>
           </button>
-          <button class="nav-item" data-section="family">
+          <button class="nav-item" data-section="new-family">
             <span class="nav-icon">
-              <svg viewBox="0 0 20 20" fill="currentColor"><path d="M9 6a3 3 0 11-6 0 3 3 0 016 0zM17 6a3 3 0 11-6 0 3 3 0 016 0zM12.93 17c.046-.327.07-.66.07-1a6.97 6.97 0 00-1.5-4.33A5 5 0 0119 16v1h-6.07zM6 11a5 5 0 015 5v1H1v-1a5 5 0 015-5z"/></svg>
+              <svg viewBox="0 0 20 20" fill="currentColor"><path d="M13 6a3 3 0 11-6 0 3 3 0 016 0zM18 8a2 2 0 11-4 0 2 2 0 014 0zM14 15a4 4 0 00-8 0v3h8v-3zM6 8a2 2 0 11-4 0 2 2 0 014 0zM16 18v-3a5.972 5.972 0 00-.75-2.906A3.005 3.005 0 0119 15v3h-3zM4.75 12.094A5.973 5.973 0 004 15v3H1v-3a3 3 0 013.75-2.906z"/></svg>
             </span>
-            <span data-i18n="nav.familyMembers">Family Members</span>
-          </button>
-          <button class="nav-item" data-section="individual">
-            <span class="nav-icon">
-              <svg viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M10 9a3 3 0 100-6 3 3 0 000 6zm-7 9a7 7 0 1114 0H3z" clip-rule="evenodd"/></svg>
-            </span>
-            <span data-i18n="nav.individualMembers">Individual Members</span>
+            <span data-i18n="nav.newFamily">New Family</span>
           </button>
           <button class="nav-item active" data-section="new-profile">
             <span class="nav-icon">
               <svg viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M10 3a1 1 0 011 1v5h5a1 1 0 110 2h-5v5a1 1 0 11-2 0v-5H4a1 1 0 110-2h5V4a1 1 0 011-1z" clip-rule="evenodd"/></svg>
             </span>
             <span data-i18n="nav.newProfile">New Profile</span>
-          </button>
-          <button class="nav-item" data-section="new-family">
-            <span class="nav-icon">
-              <svg viewBox="0 0 20 20" fill="currentColor"><path d="M13 6a3 3 0 11-6 0 3 3 0 016 0zM18 8a2 2 0 11-4 0 2 2 0 014 0zM14 15a4 4 0 00-8 0v3h8v-3zM6 8a2 2 0 11-4 0 2 2 0 014 0zM16 18v-3a5.972 5.972 0 00-.75-2.906A3.005 3.005 0 0119 15v3h-3zM4.75 12.094A5.973 5.973 0 004 15v3H1v-3a3 3 0 013.75-2.906z"/></svg>
-            </span>
-            <span data-i18n="nav.newFamily">New Family</span>
           </button>
         </nav>
 
@@ -63,10 +64,14 @@
 
         <header class="top-bar">
           <div class="top-bar-left">
-            <h2 class="page-title" id="pageTitle">New Profile</h2>
+            <div class="page-title-row">
+              <h2 class="page-title" id="pageTitle">New Profile</h2>
+              <span class="page-site" id="pageSite"></span>
+            </div>
             <span class="page-subtitle" id="pageSubtitle"></span>
           </div>
           <div class="top-bar-right">
+            <button class="topbar-icon-btn" id="themeToggle" type="button" aria-label="Toggle dark mode" title="Toggle dark mode"></button>
             <div class="lang-switch" id="langSwitch">
               <button type="button" data-lang="en">EN</button>
               <button type="button" data-lang="ja">日本語</button>
@@ -90,9 +95,8 @@
               <div class="card-row" style="margin-bottom:20px">
                 <h3 class="card-title" data-i18n="card.allProfiles">All Profiles</h3>
                 <div class="card-row-actions">
-                  <input id="profileSearch" type="search" placeholder="Filter by name…" data-i18n-ph="ph.filterName" aria-label="Filter profiles" />
+                  <input id="profileSearch" type="search" placeholder="Search name or kaimyo…" data-i18n-ph="ph.filterName" aria-label="Filter profiles" />
                   <button class="btn-secondary" id="refreshBtn" data-i18n="btn.refresh">↺ Refresh</button>
-                  <button class="btn" id="addProfileBtn" data-i18n="btn.newProfile">+ New Profile</button>
                 </div>
               </div>
               <div id="profileTable"><div class="spinner"></div></div>
@@ -102,22 +106,26 @@
           <!-- ══ FAMILY MEMBERS ══ -->
           <section id="sec-family" class="section">
             <div class="card">
-              <div class="card-row" style="margin-bottom:16px">
+              <div class="card-row" style="margin-bottom:20px">
                 <h3 class="card-title" data-i18n="fi.familyMembers">Family Members</h3>
+                <div class="card-row-actions">
+                  <input id="familySearchInput" type="search" placeholder="Filter by name…" data-i18n-ph="ph.filterName" aria-label="Filter family members" />
+                </div>
               </div>
-              <input id="familySearchInput" type="search" placeholder="Search by name…" data-i18n-ph="ph.fiSearch" aria-label="Search family members" class="fi-search" />
-              <div id="fiFamilyList" class="fi-list fi-list-full"><div class="spinner"></div></div>
+              <div id="fiFamilyList"><div class="spinner"></div></div>
             </div>
           </section>
 
           <!-- ══ INDIVIDUAL MEMBERS ══ -->
           <section id="sec-individual" class="section">
             <div class="card">
-              <div class="card-row" style="margin-bottom:16px">
+              <div class="card-row" style="margin-bottom:20px">
                 <h3 class="card-title" data-i18n="fi.individualMembers">Individual Members</h3>
+                <div class="card-row-actions">
+                  <input id="individualSearchInput" type="search" placeholder="Filter by name…" data-i18n-ph="ph.filterName" aria-label="Filter individual members" />
+                </div>
               </div>
-              <input id="individualSearchInput" type="search" placeholder="Search by name…" data-i18n-ph="ph.fiSearch" aria-label="Search individual members" class="fi-search" />
-              <div id="fiIndividualList" class="fi-list fi-list-full"><div class="spinner"></div></div>
+              <div id="fiIndividualList"><div class="spinner"></div></div>
             </div>
           </section>
 
@@ -304,10 +312,15 @@
             <div class="form-layout">
               <div class="card">
                 <h3 class="card-title" data-i18n="nf.title">Create a Family</h3>
-                <p class="field-hint" data-i18n="nf.hint">Search for existing profiles and add them here — everyone you add will be linked together as one family on the kiosk. Adding someone who's already in a family brings their whole family along, so you can drop individuals straight into it.</p>
+                <p class="field-hint" data-i18n="nf.hint">Give the family a name, then optionally add existing profiles to it. You can create the family now and add members later — an empty family is fine.</p>
 
                 <div class="field" style="margin-top:16px">
-                  <label data-i18n="nf.members">Family members</label>
+                  <label for="nfName" data-i18n="nf.name">Family name</label>
+                  <input id="nfName" type="text" placeholder="e.g. 山田家" data-i18n-ph="nf.namePh" autocomplete="off" />
+                </div>
+
+                <div class="field" style="margin-top:12px">
+                  <label data-i18n="nf.members">Family members (optional)</label>
                   <div class="family-picker">
                     <div class="family-search-row">
                       <input id="nfSearch" type="search" placeholder="Search by name or kaimyo…" data-i18n-ph="nf.searchPh" autocomplete="off" />
@@ -349,7 +362,7 @@
 
     <script src="./js/qrcode.min.js"></script>
     <script type="module">
-      import { initAdminPortal } from "./js/admin.js?v=31";
+      import { initAdminPortal } from "./js/admin.js?v=39";
       initAdminPortal();
     </script>
   </body>

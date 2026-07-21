@@ -27,8 +27,8 @@ import {
   DISPLAY_NAME,
   personMediaCollection,
   personMediaDoc,
-} from "./firebase.js?v=3";
-import { t, getLang, setLang, applyStaticI18n, onLangChange } from "./i18n.js?v=20";
+} from "./firebase.js?v=4";
+import { t, getLang, setLang, applyStaticI18n, onLangChange } from "./i18n.js?v=25";
 
 // ── State ───────────────────────────────────────────────────────────────────
 
@@ -87,7 +87,15 @@ function matchesKaimyoQuery(person, rawQuery) {
   const kaimyo = (person.kaimyo || person.posthumous_name || "").toLowerCase();
   return !!kaimyo && kaimyo.includes(q);
 }
+
+// The search used by the profile lists (dashboard, family, individual):
+// matches on name (first/last, kanji or kana) OR posthumous name (kaimyo).
+function matchesProfileQuery(person, rawQuery) {
+  return matchesNameQuery(person, rawQuery) || matchesKaimyoQuery(person, rawQuery);
+}
 let dashboardPersons = [];  // cached for the family/individual panel search
+let familyRecords = [];     // named family docs (the `families` collection)
+let selectedFamilyKey = null; // Family page: which family is drilled into (null = families list)
 let currentSection = "dashboard";
 let sortField = "last_name"; // last_name | first_name | death_date | created_at
 let sortDir   = "asc";       // asc | desc
@@ -213,6 +221,7 @@ async function loadMembers() {
   try {
     const personSnap = await getDocs(tenantQuery(COLLECTIONS.persons));
     dashboardPersons = personSnap.docs.map((d) => ({ id: d.id, ...d.data() }));
+    await loadFamilies();
     renderFamilyIndividualPanel();
   } catch (err) {
     console.error("[members] load failed:", err);
@@ -222,102 +231,155 @@ async function loadMembers() {
   }
 }
 
-// ── Family / individual member panel (dashboard) ──────────────────────────────
+// Named family records for this tenant. Failures (e.g. rules not yet deployed)
+// degrade gracefully to an empty list rather than breaking the page.
+async function loadFamilies() {
+  try {
+    const snap = await getDocs(tenantQuery(COLLECTIONS.families));
+    familyRecords = snap.docs.map((d) => ({ id: d.id, ...d.data() }));
+  } catch (err) {
+    console.warn("[families] load failed (is the families security rule deployed?):", err.message || err);
+    familyRecords = [];
+  }
+}
+
+// ── Family / individual member sections ───────────────────────────────────────
 // A person counts as a "family member" once they're linked to at least one
 // other profile via related_persons (kept bidirectional on save); everyone
-// else shows up as an individual with no family group. Family members are
-// grouped by last name (matching the "<last name>家" label the kiosk shows)
-// so the panel lists each family once with its member count, not one row per person.
+// else shows up as an individual with no family group. Both drill-down sections
+// render the same profiles table as the dashboard, just filtered differently.
 
 function renderFamilyIndividualPanel() {
-  const familyEl = document.getElementById("fiFamilyList");
-  const individualEl = document.getElementById("fiIndividualList");
-  if (!familyEl || !individualEl) return;
+  renderFamilySection();
+  renderIndividualSection();
+}
 
-  // Two separate panels, each filtered independently by its own search box.
-  const familyQ = document.getElementById("familySearchInput")?.value || "";
-  const individualQ = document.getElementById("individualSearchInput")?.value || "";
+// The set of person ids that belong to a named family record.
+function familyMemberIdSet() {
+  const s = new Set();
+  for (const rec of familyRecords) for (const id of (rec.member_ids || [])) s.add(id);
+  return s;
+}
 
-  const familyPool = familyQ.trim()
-    ? dashboardPersons.filter((p) => matchesNameQuery(p, familyQ))
-    : dashboardPersons;
-  const individualPool = individualQ.trim()
-    ? dashboardPersons.filter((p) => matchesNameQuery(p, individualQ))
-    : dashboardPersons;
+// The unified family list shown on the Family page: named records (which may be
+// empty) plus "legacy" families still derived from related_persons for anyone
+// not already in a record. Each family has { key, name, members }.
+function buildFamilies() {
+  const covered = familyMemberIdSet();
 
-  const familyMembers = familyPool.filter((p) => (p.related_persons || []).length > 0);
-  const individualMembers = individualPool.filter((p) => !(p.related_persons || []).length);
+  const recordFamilies = familyRecords.map((rec) => ({
+    key: `rec:${rec.id}`,
+    name: rec.name || "—",
+    members: (rec.member_ids || [])
+      .map((id) => dashboardPersons.find((p) => p.id === id))
+      .filter(Boolean),
+  }));
 
-  // Group family members by last name into one row per family.
-  const familyGroups = new Map();
-  for (const p of familyMembers) {
+  const legacy = new Map();
+  for (const p of dashboardPersons) {
+    if (!(p.related_persons || []).length || covered.has(p.id)) continue;
     const key = p.last_name || "—";
-    if (!familyGroups.has(key)) familyGroups.set(key, []);
-    familyGroups.get(key).push(p);
+    if (!legacy.has(key)) legacy.set(key, []);
+    legacy.get(key).push(p);
   }
-  const familyGroupHtml = [...familyGroups.entries()]
-    .sort((a, b) => a[0].localeCompare(b[0]))
-    .map(([lastName, members]) => `
-      <div class="fi-family-group">
-        <button type="button" class="fi-family-header" data-last-name="${esc(lastName)}">
-          <span class="fi-family-name">${esc(lastName)}家</span>
-          <span class="fi-family-count">${members.length}${t("fi.peopleSuffix")}</span>
-          <span class="fi-family-chevron">›</span>
-        </button>
-        <div class="fi-family-members">
-          ${members
-            .map((m) => `
-              <button type="button" class="fi-member-row" data-id="${m.id}">
-                <span>${esc(m.last_name || "")} ${esc(m.first_name || "")}</span>
-                <span>${esc(m.plot || "—")}</span>
-              </button>`)
-            .join("")}
-        </div>
-      </div>`)
+  const legacyFamilies = [...legacy.entries()].map(([lastName, members]) => ({
+    key: `last:${lastName}`,
+    name: `${lastName}家`,
+    members,
+  }));
+
+  return [...recordFamilies, ...legacyFamilies];
+}
+
+// Individual view: people with no family links AND not in any family record.
+function renderIndividualSection() {
+  const el = document.getElementById("fiIndividualList");
+  if (!el) return;
+  const covered = familyMemberIdSet();
+  const q = document.getElementById("individualSearchInput")?.value || "";
+  let pool = dashboardPersons.filter((p) => !(p.related_persons || []).length && !covered.has(p.id));
+  if (q.trim()) pool = pool.filter((p) => matchesProfileQuery(p, q));
+  renderPersonsTable(el, pool, dashboardPersons);
+}
+
+// Family view is two levels: a list of families, and — once a family is
+// clicked — that family's members shown as the dashboard table.
+function renderFamilySection() {
+  const el = document.getElementById("fiFamilyList");
+  if (!el) return;
+
+  let families = buildFamilies();
+
+  const q = (document.getElementById("familySearchInput")?.value || "").trim().toLowerCase();
+  if (q) {
+    // Match the family name itself ("山田家") or any member's name/kaimyo.
+    families = families.filter(
+      (f) => f.name.toLowerCase().includes(q) || f.members.some((p) => matchesProfileQuery(p, q))
+    );
+  }
+  families.sort((a, b) => a.name.localeCompare(b.name));
+
+  // Level 2 — a family is open: its members as the same table as the dashboard.
+  const open = selectedFamilyKey && families.find((f) => f.key === selectedFamilyKey);
+  if (open) {
+    el.innerHTML = `
+      <div class="drill-header">
+        <button type="button" class="btn-secondary" id="familyBackBtn">${t("fi.backToFamilies")}</button>
+        <span class="drill-title">${esc(open.name)}</span>
+      </div>
+      <div id="familyMembersTable"></div>`;
+    const tableEl = document.getElementById("familyMembersTable");
+    if (open.members.length) {
+      renderPersonsTable(tableEl, open.members, dashboardPersons);
+    } else {
+      tableEl.innerHTML = `<p class="empty-state">${t("fi.emptyFamily")}</p>`;
+    }
+    document.getElementById("familyBackBtn")?.addEventListener("click", () => {
+      selectedFamilyKey = null;
+      renderFamilySection();
+    });
+    return;
+  }
+
+  // Level 1 — the list of families. Each row drills into its members.
+  if (!families.length) {
+    el.innerHTML = `<p class="empty-state">${t("empty.noProfiles")}</p>`;
+    return;
+  }
+
+  const rows = families
+    .map((f) => `
+      <tr data-key="${esc(f.key)}">
+        <td>
+          <div class="avatar-cell">
+            <div class="avatar">${esc((f.name.charAt(0) || "✦").toUpperCase())}</div>
+            <div class="profile-name">${esc(f.name)}</div>
+          </div>
+        </td>
+        <td>${f.members.length}${t("fi.peopleSuffix")}</td>
+        <td class="drill-chevron">›</td>
+      </tr>`)
     .join("");
 
-  familyEl.innerHTML = familyGroupHtml || `<p class="empty-state">${t("empty.noProfiles")}</p>`;
+  el.innerHTML = `
+    <div class="profiles-table-wrap">
+      <table class="profiles-table">
+        <thead>
+          <tr>
+            <th>${t("fi.familyCol")}</th>
+            <th>${t("fi.membersCol")}</th>
+            <th></th>
+          </tr>
+        </thead>
+        <tbody>${rows}</tbody>
+      </table>
+    </div>`;
 
-  const individualRow = (p) => `
-    <tr data-id="${p.id}">
-      <td>${esc(p.last_name || "")} ${esc(p.first_name || "")}</td>
-      <td>${esc(p.plot || "—")}</td>
-    </tr>`;
-
-  individualEl.innerHTML = individualMembers.length
-    ? `<table class="mini-table">
-         <thead><tr><th>${t("fi.nameCol")}</th><th>${t("fi.plotCol")}</th></tr></thead>
-         <tbody>${individualMembers.map(individualRow).join("")}</tbody>
-       </table>`
-    : `<p class="empty-state">${t("empty.noProfiles")}</p>`;
-
-  // Clicking a family header expands it in place to show each member —
-  // clicking a member opens that person's own profile directly.
-  familyEl.querySelectorAll(".fi-family-header").forEach((header) => {
-    header.addEventListener("click", () => {
-      header.closest(".fi-family-group")?.classList.toggle("expanded");
-    });
-  });
-
-  familyEl.querySelectorAll(".fi-member-row").forEach((row) => {
-    row.addEventListener("click", () => {
-      const person = dashboardPersons.find((p) => p.id === row.dataset.id);
-      if (person) {
-        loadForEdit(person);
-        showSection("new-profile", { activeNav: "dashboard" });
-      }
-    });
-  });
-
-  // Clicking an individual opens them for editing directly.
-  individualEl.querySelectorAll("tr[data-id]").forEach((tr) => {
+  el.querySelectorAll("tr[data-key]").forEach((tr) => {
     tr.style.cursor = "pointer";
     tr.addEventListener("click", () => {
-      const person = dashboardPersons.find((p) => p.id === tr.dataset.id);
-      if (person) {
-        loadForEdit(person);
-        showSection("new-profile", { activeNav: "dashboard" });
-      }
+      selectedFamilyKey = tr.dataset.key;
+      renderFamilySection();
     });
   });
 }
@@ -358,33 +420,55 @@ function renderStats(persons) {
   const wrap = document.getElementById("statCards");
   if (!wrap) return;
 
-  const withFamily = persons.filter((p) => (p.related_persons || []).length > 0);
-  const familyGroups = new Set(withFamily.map((p) => p.last_name || "—")).size;
-  const individuals = persons.length - withFamily.length;
+  // Families = named records (incl. empty) + legacy families derived from links.
+  // Individuals = people with no links and not in any family record.
+  const covered = familyMemberIdSet();
+  const familyGroups = buildFamilies().length;
+  const individuals = persons.filter((p) => !(p.related_persons || []).length && !covered.has(p.id)).length;
 
   const now = new Date();
   const monthStart = new Date(now.getFullYear(), now.getMonth(), 1).getTime() / 1000;
   const thisMonth = persons.filter((p) => (p.created_at?.seconds ?? 0) >= monthStart).length;
 
+  // `section` marks a card as a shortcut into its member list — clicking
+  // "Family groups" / "Individuals" drills straight into that section.
   const stats = [
     { key: "stats.total",       value: persons.length, icon: '<svg viewBox="0 0 20 20" fill="currentColor"><path d="M9 6a3 3 0 11-6 0 3 3 0 016 0zM17 6a3 3 0 11-6 0 3 3 0 016 0zM12.93 17c.046-.327.07-.66.07-1a6.97 6.97 0 00-1.5-4.33A5 5 0 0119 16v1h-6.07zM6 11a5 5 0 015 5v1H1v-1a5 5 0 015-5z"/></svg>' },
-    { key: "stats.families",    value: familyGroups,   icon: '<svg viewBox="0 0 20 20" fill="currentColor"><path d="M10.707 2.293a1 1 0 00-1.414 0l-7 7a1 1 0 001.414 1.414L4 10.414V17a1 1 0 001 1h2a1 1 0 001-1v-2a1 1 0 011-1h2a1 1 0 011 1v2a1 1 0 001 1h2a1 1 0 001-1v-6.586l.293.293a1 1 0 001.414-1.414l-7-7z"/></svg>' },
-    { key: "stats.individuals", value: individuals,    icon: '<svg viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M10 9a3 3 0 100-6 3 3 0 000 6zm-7 9a7 7 0 1114 0H3z" clip-rule="evenodd"/></svg>' },
+    { key: "stats.families",    value: familyGroups,   section: "family",     icon: '<svg viewBox="0 0 20 20" fill="currentColor"><path d="M10.707 2.293a1 1 0 00-1.414 0l-7 7a1 1 0 001.414 1.414L4 10.414V17a1 1 0 001 1h2a1 1 0 001-1v-2a1 1 0 011-1h2a1 1 0 011 1v2a1 1 0 001 1h2a1 1 0 001-1v-6.586l.293.293a1 1 0 001.414-1.414l-7-7z"/></svg>' },
+    { key: "stats.individuals", value: individuals,    section: "individual", icon: '<svg viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M10 9a3 3 0 100-6 3 3 0 000 6zm-7 9a7 7 0 1114 0H3z" clip-rule="evenodd"/></svg>' },
     { key: "stats.thisMonth",   value: thisMonth,      icon: '<svg viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M6 2a1 1 0 00-1 1v1H4a2 2 0 00-2 2v10a2 2 0 002 2h12a2 2 0 002-2V6a2 2 0 00-2-2h-1V3a1 1 0 10-2 0v1H7V3a1 1 0 00-1-1zm0 5a1 1 0 000 2h8a1 1 0 100-2H6z" clip-rule="evenodd"/></svg>' },
   ];
 
+  const goArrow = '<svg class="stat-go" viewBox="0 0 20 20" fill="currentColor" width="18" height="18"><path fill-rule="evenodd" d="M7.293 14.707a1 1 0 010-1.414L10.586 10 7.293 6.707a1 1 0 011.414-1.414l4 4a1 1 0 010 1.414l-4 4a1 1 0 01-1.414 0z" clip-rule="evenodd"/></svg>';
+
   wrap.innerHTML = stats.map((s, i) => `
-    <div class="stat-card" style="animation-delay:${0.05 + i * 0.06}s">
+    <div class="stat-card${s.section ? " stat-card-link" : ""}"${s.section ? ` data-section="${s.section}" role="button" tabindex="0"` : ""} style="animation-delay:${0.05 + i * 0.06}s">
       <div class="stat-icon">${s.icon}</div>
       <div class="stat-body">
         <div class="stat-value" data-value="${s.value}">0</div>
         <div class="stat-label">${t(s.key)}</div>
       </div>
+      ${s.section ? goArrow : ""}
     </div>`).join("");
 
   wrap.querySelectorAll(".stat-value").forEach((el) =>
     countUp(el, Number(el.dataset.value))
   );
+
+  // Wire the shortcut cards — activeNav stays "dashboard" so the sidebar keeps
+  // Dashboard highlighted while showing these drill-down sections.
+  wrap.querySelectorAll(".stat-card-link").forEach((card) => {
+    const go = () => {
+      // Opening the Family card always starts at the families list, not a
+      // family that happened to be drilled into earlier.
+      if (card.dataset.section === "family") selectedFamilyKey = null;
+      showSection(card.dataset.section, { activeNav: "dashboard" });
+    };
+    card.addEventListener("click", go);
+    card.addEventListener("keydown", (e) => {
+      if (e.key === "Enter" || e.key === " ") { e.preventDefault(); go(); }
+    });
+  });
 }
 
 async function loadProfileList() {
@@ -397,6 +481,8 @@ async function loadProfileList() {
     // Sorting is done client-side so profiles always load even without indexes.
     const snap = await getDocs(tenantQuery(COLLECTIONS.persons));
     allProfiles = snap.docs.map((d) => ({ id: d.id, ...d.data() }));
+    dashboardPersons = allProfiles;
+    await loadFamilies();
     renderProfileTable(allProfiles);
     renderStats(allProfiles);
   } catch (err) {
@@ -411,17 +497,28 @@ function sortIcon(field) {
 }
 
 function renderProfileTable(persons) {
-  const wrap = document.getElementById("profileTable");
-  if (!wrap) return;
+  renderPersonsTable(document.getElementById("profileTable"), persons, allProfiles);
+}
+
+/**
+ * Render the full profiles table (avatar, name, year, section, row, actions)
+ * into any container. Shared by the dashboard's "All Profiles" list and the
+ * Family / Individual drill-down sections — same structure, different data pool.
+ *   container   — element to render into
+ *   persons     — already-filtered rows to show
+ *   actionPool  — list the QR/Edit/Delete buttons resolve their id against
+ */
+function renderPersonsTable(container, persons, actionPool) {
+  if (!container) return;
 
   if (!persons.length) {
-    wrap.innerHTML = `<p class="empty-state">${t("empty.noProfiles")}</p>`;
+    container.innerHTML = `<p class="empty-state">${t("empty.noProfiles")}</p>`;
     return;
   }
 
   const sorted = sortProfiles(persons);
 
-  wrap.innerHTML = `
+  container.innerHTML = `
     <div class="profiles-table-wrap">
       <table class="profiles-table">
         <thead>
@@ -440,8 +537,8 @@ function renderProfileTable(persons) {
       </table>
     </div>`;
 
-  // Sortable column headers
-  wrap.querySelectorAll("th.sortable").forEach((th) => {
+  // Sortable column headers — re-render this same container/pool on toggle.
+  container.querySelectorAll("th.sortable").forEach((th) => {
     th.style.cursor = "pointer";
     th.addEventListener("click", () => {
       const field = th.dataset.sort;
@@ -451,11 +548,11 @@ function renderProfileTable(persons) {
         sortField = field;
         sortDir = "asc";
       }
-      renderProfileTable(persons);
+      renderPersonsTable(container, persons, actionPool);
     });
   });
 
-  wireProfileActions(wrap);
+  wireProfileActions(container, actionPool);
 }
 
 function profileRow(p, full = false) {
@@ -756,7 +853,9 @@ function renderFamilyBuilder() {
       renderFamilyBuilder();
     });
   });
-  if (saveBtn) saveBtn.disabled = familyBuilder.length < 2;
+  // A family only needs a name — members are optional (an empty family is fine).
+  const name = (document.getElementById("nfName")?.value || "").trim();
+  if (saveBtn) saveBtn.disabled = !name;
 }
 
 function addToFamilyBuilder(id) {
@@ -838,22 +937,41 @@ function initFamilyBuilder() {
     }
   });
 
+  // Typing a name enables "Create family" (members stay optional).
+  const nameInput = document.getElementById("nfName");
+  nameInput?.addEventListener("input", renderFamilyBuilder);
+  nameInput?.addEventListener("keydown", (e) => {
+    if (e.key === "Enter" && !nameInput.value.trim()) e.preventDefault();
+  });
+
   saveBtn?.addEventListener("click", saveFamilyBuilder);
   renderFamilyBuilder();
 }
 
 async function saveFamilyBuilder() {
-  if (familyBuilder.length < 2) { setStatus(t("nf.needTwo"), "error"); return; }
+  const nameEl = document.getElementById("nfName");
+  const name = (nameEl?.value || "").trim();
+  if (!name) { setStatus(t("nf.needName"), "error"); nameEl?.focus(); return; }
+
   const saveBtn = document.getElementById("nfSaveBtn");
   const ids = familyBuilder.map((p) => p.id);
   if (saveBtn) saveBtn.disabled = true;
   setStatus(t("nf.saving"), "info");
 
   try {
-    // Additive clique: every member's related_persons becomes the union of what
-    // it already had and every other member here. Never removes a link.
+    // Create the family record. Members are optional — an empty family is fine.
+    await addDoc(collection(db, COLLECTIONS.families), withTenant({
+      name,
+      member_ids: ids,
+      updated_at: serverTimestamp(),
+    }));
+
+    // Keep the kiosk working without any kiosk change: link members to each
+    // other via related_persons (additive) so a 2+ member family still
+    // navigates on the visitor-facing kiosk, which reads those links.
     for (const id of ids) {
       const others = ids.filter((x) => x !== id);
+      if (!others.length) continue;
       const snap = await getDoc(doc(db, COLLECTIONS.persons, id));
       const existing = snap.exists() ? (snap.data().related_persons || []) : [];
       const merged = [...new Set([...existing, ...others])];
@@ -865,19 +983,24 @@ async function saveFamilyBuilder() {
       }
     }
 
-    // Refresh caches so the new links show everywhere (dashboard, pickers).
+    // Refresh caches so the new family shows everywhere.
     const snap = await getDocs(tenantQuery(COLLECTIONS.persons));
     allProfiles = snap.docs.map((d) => ({ id: d.id, ...d.data() }));
     dashboardPersons = allProfiles;
+    await loadFamilies();
 
-    const count = ids.length;
     familyBuilder = [];
+    if (nameEl) nameEl.value = "";
     renderFamilyBuilder();
-    setStatus(t("nf.created", { n: count }), "success");
+    setStatus(t("nf.created", { name }), "success");
+
+    // Jump to the Family page so the new family is visible right away.
+    selectedFamilyKey = null;
+    showSection("family", { activeNav: "dashboard" });
   } catch (err) {
     console.error("[admin] create family failed:", err);
     setStatus(t("nf.createFailed", { msg: err.message || err }), "error");
-    if (saveBtn) saveBtn.disabled = familyBuilder.length < 2;
+    if (saveBtn) saveBtn.disabled = false;
   }
 }
 
@@ -1143,6 +1266,9 @@ async function deleteProfile(person) {
     renderProfileTable(allProfiles);
     renderStats(allProfiles);
     dashboardPersons = dashboardPersons.filter((p) => p.id !== person.id);
+    // Delete can be triggered from the Family / Individual tables too — refresh
+    // whichever of those is showing so the removed row disappears immediately.
+    renderFamilyIndividualPanel();
   } catch (err) {
     console.error("[admin] delete failed:", err);
     setStatus(t("status.deleteFailed", { msg: err.message }), "error");
@@ -1396,6 +1522,28 @@ export function initAdminPortal() {
     window.location.href = "login.html";
   });
 
+  // Theme toggle — flips light/dark, persists the choice, and syncs its icon.
+  // (The <head> script already applied the stored/system theme before paint.)
+  const MOON_ICON = '<svg viewBox="0 0 20 20" fill="currentColor"><path d="M17.293 13.293A8 8 0 016.707 2.707a8.001 8.001 0 1010.586 10.586z"/></svg>';
+  const SUN_ICON = '<svg viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M10 2a1 1 0 011 1v1a1 1 0 11-2 0V3a1 1 0 011-1zm4 8a4 4 0 11-8 0 4 4 0 018 0zm-.464 4.95l.707.707a1 1 0 001.414-1.414l-.707-.707a1 1 0 00-1.414 1.414zm2.12-10.607a1 1 0 010 1.414l-.706.707a1 1 0 11-1.414-1.414l.707-.707a1 1 0 011.414 0zM17 11a1 1 0 100-2h-1a1 1 0 100 2h1zm-7 4a1 1 0 011 1v1a1 1 0 11-2 0v-1a1 1 0 011-1zM5.05 6.464A1 1 0 106.465 5.05l-.708-.707a1 1 0 00-1.414 1.414l.707.707zm1.414 8.486l-.707.707a1 1 0 01-1.414-1.414l.707-.707a1 1 0 011.414 1.414zM4 11a1 1 0 100-2H3a1 1 0 000 2h1z" clip-rule="evenodd"/></svg>';
+  const themeBtn = document.getElementById("themeToggle");
+  if (themeBtn) {
+    const syncThemeIcon = (theme) => {
+      const dark = theme === "dark";
+      themeBtn.innerHTML = dark ? SUN_ICON : MOON_ICON;
+      const label = dark ? "Switch to light mode" : "Switch to dark mode";
+      themeBtn.setAttribute("aria-label", label);
+      themeBtn.title = label;
+    };
+    syncThemeIcon(document.documentElement.dataset.theme || "light");
+    themeBtn.addEventListener("click", () => {
+      const next = document.documentElement.dataset.theme === "dark" ? "light" : "dark";
+      document.documentElement.dataset.theme = next;
+      try { localStorage.setItem("ss_theme", next); } catch {}
+      syncThemeIcon(next);
+    });
+  }
+
   // Language: apply saved choice + wire the EN / 日本語 switch
   document.documentElement.lang = getLang();
   applyStaticI18n();
@@ -1407,23 +1555,33 @@ export function initAdminPortal() {
   });
   onLangChange(retranslateDynamic);
 
-  // Sidebar tenant card — the raw tenant id is a slug ("tokyo_reien"), so
-  // prettify it for display ("Tokyo Reien") and keep the raw id in the
-  // tooltip. The signed-in admin's display name shows underneath.
+  // Memorial site name — shown in the top bar next to the page title so the
+  // admin always knows which site they're managing. The raw tenant id is a
+  // slug ("tokyo_reien"), so prettify it for display ("Tokyo Reien").
+  const prettySite = (TENANT_ID || "")
+    .replace(/[-_]+/g, " ")
+    .replace(/\b\w/g, (c) => c.toUpperCase())
+    .trim() || "—";
+
+  const siteEl = document.getElementById("pageSite");
+  if (siteEl) {
+    siteEl.textContent = prettySite;
+    siteEl.title = TENANT_ID;
+  }
+
+  // Sidebar footer — the signed-in admin's identity (name over role).
   const tenantEl = document.getElementById("tenantBadge");
   if (tenantEl) {
-    const pretty = (TENANT_ID || "")
-      .replace(/[-_]+/g, " ")
-      .replace(/\b\w/g, (c) => c.toUpperCase())
-      .trim() || "—";
-    const initials = pretty.split(/\s+/).map((w) => w.charAt(0)).slice(0, 2).join("").toUpperCase();
+    const who = DISPLAY_NAME || "—";
+    const role = (ROLE || "admin").replace(/\b\w/g, (c) => c.toUpperCase());
+    const initials = who.split(/\s+/).map((w) => w.charAt(0)).slice(0, 2).join("").toUpperCase();
     tenantEl.innerHTML = `
       <span class="tenant-avatar">${esc(initials)}</span>
       <span class="tenant-meta">
-        <span class="tenant-name">${esc(pretty)}</span>
-        <span class="tenant-sub">${esc(DISPLAY_NAME || ROLE || "")}</span>
+        <span class="tenant-name">${esc(who)}</span>
+        <span class="tenant-sub">${esc(role)}</span>
       </span>`;
-    tenantEl.title = TENANT_ID;
+    tenantEl.title = who;
   }
 
   // Sidebar nav
@@ -1446,7 +1604,7 @@ export function initAdminPortal() {
   // Client-side name filter
   document.getElementById("profileSearch")?.addEventListener("input", (e) => {
     const q = e.target.value;
-    const filtered = q.trim() ? allProfiles.filter((p) => matchesNameQuery(p, q)) : allProfiles;
+    const filtered = q.trim() ? allProfiles.filter((p) => matchesProfileQuery(p, q)) : allProfiles;
     renderProfileTable(filtered);
   });
 

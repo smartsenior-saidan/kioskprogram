@@ -99,6 +99,7 @@ export const COLLECTIONS = {
   tenants: "tenants",
   devices: "kiosk_devices",
   persons: "deceased_persons",
+  families: "families",
 };
 
 /** Reference to the media subcollection for a specific person. */
