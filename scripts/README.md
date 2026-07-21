@@ -112,6 +112,10 @@ Check `reader.log` on the tablet:
   without reboot) and suppress repeated identical errors to one line per
   10 minutes (a kiosk with no QR scanner was logging the same error every
   3 seconds forever).
+- 1.4.0 — install Python from a **bundled** installer (`python/`) instead of
+  downloading it at first boot, with download as fallback; the flaky SYSTEM-
+  context download was the #1 cause of tablets ending up with no NFC. pip now
+  retries a slow/unreachable PyPI instead of failing the whole setup.
 
 ## kiosk-lockdown.ps1 / kiosk-lockdown-undo.ps1
 
@@ -138,6 +142,52 @@ only stops the script from running again. To actually restore normal
 Windows behavior on a tablet (e.g. for maintenance), assign
 `kiosk-lockdown-undo.ps1` to it instead, which explicitly writes each
 setting back to its Windows default, then reboot.
+
+## kiosk-launch-install.ps1 (Win32 app)
+
+The NFC daemon, drivers, Edge auto-launch task, and autologin are delivered as a
+single Win32 app ("SmartSenior Kiosk Launch"). Unlike the lockdown scripts, this
+one ships file payloads (the bundled Python installer and the vendor drivers), so
+it must be a Win32 app, not a platform script.
+
+### Packaging
+
+Point `IntuneWinAppUtil` at the **whole `scripts\` folder** so `python\`,
+`drivers\`, and every `.ps1` go into the `.intunewin` together (the script loads
+them by `$PSScriptRoot`). Missing either folder is what causes silent partial
+installs. Verify the package contains `python\python-3.11.9-amd64.exe` and
+`drivers\...\*.msi` before uploading.
+
+### Detection rule — use the custom script, not a registry marker
+
+Set the app's detection to **"Use a custom detection script"** and upload
+`kiosk-launch-detect.ps1`. **Do not** use the old registry-marker rule
+(`HKLM\SOFTWARE\SmartSenior\KioskLaunch`): that marker is written in the
+install script's `finally` block no matter what, so a half-failed install still
+reported "installed" and Intune never retried — the root cause of tablets ending
+up with Edge but no NFC.
+
+The custom script reports "installed" only when the kiosk is actually functional
+(Python + deps, reader script, and both scheduled tasks present/enabled). Because
+Intune re-evaluates detection on every check-in, this makes the app **self-heal**:
+
+- a tablet where the install silently failed shows "not installed" → Intune
+  retries it, and
+- a working tablet that later drifts (task disabled, Python wiped by a factory
+  reset) flips back to "not installed" → Intune re-runs the install.
+
+With bundled Python + this detection, the app installs reliably from a fresh
+tablet and repairs itself. A separate Intune **Remediation** (an hourly health
+check that re-runs `nfcsetup.ps1`) is possible as belt-and-suspenders for faster
+self-heal, but with the custom detection rule above it is **no longer required** —
+Intune's own app engine already retries failures and repairs drift.
+
+### Forcing a re-run on already-enrolled tablets
+
+Devices that already have the old registry marker will be seen as "installed" by
+the old rule until you switch the app to the custom detection script above. Once
+switched, Intune re-evaluates real health and repairs the half-installed ones on
+the next check-in — no marker-version bump needed.
 
 ## Intune upload settings
 

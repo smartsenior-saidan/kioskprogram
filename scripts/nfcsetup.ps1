@@ -327,28 +327,43 @@ if __name__ == "__main__":
 '@ | Out-File -FilePath $scriptPy -Encoding UTF8
 Write-Log "kiosk_reader.py written"
 
-# 4. Install Python 3.11 system-wide
+# 4. Install Python 3.11 system-wide. Prefer a copy BUNDLED in the package
+# (scripts\python\) so a fresh tablet never has to reach python.org at first boot
+# under SYSTEM — that download stalling (a ~30s download once crawled for 27
+# minutes here) was the #1 reason tablets ended up with no NFC. We fall back to
+# downloading only when the bundled installer isn't next to this script — e.g.
+# when nfcsetup.ps1 runs standalone as an Intune Remediation, which carries no
+# file payload; there the fallback download is fine because Remediations retry.
 if (-not (Test-Path $pythonExe)) {
-    # Invoke-WebRequest renders a download progress bar that makes it 10-50x
-    # slower under SYSTEM/non-interactive contexts — a ~30-second download
-    # crawled for 27 minutes here, stalling the whole Intune install.
-    # Silencing the progress stream makes it fast and non-blocking.
-    $ProgressPreference = 'SilentlyContinue'
-    Write-Log "Downloading Python 3.11..."
-    Invoke-WebRequest -Uri "https://www.python.org/ftp/python/3.11.9/python-3.11.9-amd64.exe" `
-        -OutFile "$env:TEMP\python311.exe" -UseBasicParsing
+    $bundledPython = if ($PSScriptRoot) { Join-Path $PSScriptRoot "python\python-3.11.9-amd64.exe" } else { $null }
+    if ($bundledPython -and (Test-Path $bundledPython)) {
+        $installerPath = $bundledPython
+        Write-Log "Installing Python from bundled installer: $bundledPython"
+    } else {
+        # Invoke-WebRequest renders a download progress bar that makes it 10-50x
+        # slower under SYSTEM/non-interactive contexts; silencing the progress
+        # stream makes it fast and non-blocking.
+        $ProgressPreference = 'SilentlyContinue'
+        $installerPath = "$env:TEMP\python311.exe"
+        Write-Log "Bundled Python not found — downloading Python 3.11..."
+        Invoke-WebRequest -Uri "https://www.python.org/ftp/python/3.11.9/python-3.11.9-amd64.exe" `
+            -OutFile $installerPath -UseBasicParsing
+    }
     Write-Log "Installing Python..."
-    Start-Process "$env:TEMP\python311.exe" `
+    Start-Process $installerPath `
         -ArgumentList "/quiet InstallAllUsers=1 PrependPath=1 Include_test=0" -Wait
     Write-Log "Python installed"
 } else {
     Write-Log "Python already installed"
 }
 
-# 5. Install Python packages (all have pre-built Windows wheels, no compiling needed)
+# 5. Install Python packages (all have pre-built Windows wheels, no compiling
+# needed). --retries/--timeout ride out a slow or briefly-unreachable PyPI at
+# first boot instead of failing the whole setup; honest detection (see
+# kiosk-launch-detect.ps1) re-runs this later anyway if a transient hiccup wins.
 Write-Log "Installing Python packages..."
 $env:PATH = [System.Environment]::GetEnvironmentVariable("PATH", "Machine") + ";" + $env:PATH
-& $pipExe install --quiet --upgrade --disable-pip-version-check requests websocket-client pyscard ndeflib pynput pyserial
+& $pipExe install --quiet --upgrade --disable-pip-version-check --retries 5 --timeout 30 requests websocket-client pyscard ndeflib pynput pyserial
 Write-Log "Python packages installed"
 
 # 6. Ensure Smart Card service is running
