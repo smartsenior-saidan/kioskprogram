@@ -26,7 +26,7 @@
     />
     <link rel="stylesheet" href="css/kiosk.css?v=95" />
     <!-- Pins this kiosk to its memorial site (tenant). Runs before modules. -->
-    <script src="js/config.js"></script>
+    <script src="js/config.js?v=1"></script>
   </head>
   <body>
     <!-- ══════════════════════════════════════════════════════
@@ -131,8 +131,8 @@
     </script>
 
     <script type="module">
-      import { initSearchScreen } from "./js/search.js";
-      import { applyTenantBackground } from "./js/tenant-bg.js";
+      import { initSearchScreen } from "./js/search.js?v=1";
+      import { applyTenantBackground } from "./js/tenant-bg.js?v=1";
 
       // ── Translations ──────────────────────────────────────────────────
       const STRINGS = {

@@ -5,7 +5,7 @@ import {
   getDocs,
   getPersonById,
   personMediaCollection,
-} from "./firebase.js";
+} from "./firebase.js?v=1";
 
 const ADVANCE_MS = 6000;
 

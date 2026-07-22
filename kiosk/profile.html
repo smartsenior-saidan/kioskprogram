@@ -14,7 +14,7 @@
     <link rel="stylesheet" href="css/style.css?v=3" />
     <link rel="stylesheet" href="css/kiosk.css?v=95" />
     <!-- Pins this kiosk to its memorial site (tenant). Runs before modules. -->
-    <script src="js/config.js"></script>
+    <script src="js/config.js?v=1"></script>
   </head>
   <body class="profile-page lang-ja">
 
@@ -110,8 +110,8 @@
     </div>
 
     <script type="module">
-      import { initProfileScreen } from "./js/profile.js";
-      import { applyTenantBackground } from "./js/tenant-bg.js";
+      import { initProfileScreen } from "./js/profile.js?v=1";
+      import { applyTenantBackground } from "./js/tenant-bg.js?v=1";
       applyTenantBackground().then(() => initProfileScreen());
     </script>
   </body>

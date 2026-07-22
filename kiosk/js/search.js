@@ -9,7 +9,7 @@ import {
   getDocs,
   tenantQuery,
   COLLECTIONS,
-} from "./firebase.js";
+} from "./firebase.js?v=1";
 
 // --- Fuzzy matching utilities ----------------------------------------------
 

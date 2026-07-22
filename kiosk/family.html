@@ -16,7 +16,7 @@
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
     <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Shippori+Mincho:wght@400;500;600;700;800&display=swap" />
     <link rel="stylesheet" href="css/kiosk.css?v=95" />
-    <script src="js/config.js"></script>
+    <script src="js/config.js?v=1"></script>
   </head>
   <body class="family-page lang-ja">
 
@@ -38,8 +38,8 @@
     </div>
 
     <script type="module">
-      import { getPersonById, getDocs, getDoc, doc, db, where, tenantQuery, COLLECTIONS } from "./js/firebase.js";
-      import { applyTenantBackground } from "./js/tenant-bg.js";
+      import { getPersonById, getDocs, getDoc, doc, db, where, tenantQuery, COLLECTIONS } from "./js/firebase.js?v=1";
+      import { applyTenantBackground } from "./js/tenant-bg.js?v=1";
       applyTenantBackground();
 
       document.getElementById('fnavBack').addEventListener('click', () => {

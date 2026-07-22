@@ -10,7 +10,7 @@ import {
   storageRef,
   getDownloadURL,
   getTenantConfig,
-} from "./firebase.js";
+} from "./firebase.js?v=1";
 
 const EXTENSIONS = ["jpg", "jpeg", "png", "webp"];
 const BG_TIMEOUT_MS = 2500;
