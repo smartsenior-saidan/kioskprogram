@@ -4,41 +4,23 @@
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>Admin — SmartSenior</title>
-    <!-- Resolve theme before paint to avoid a flash of the wrong mode -->
-    <script>
-      (function () {
-        try {
-          var s = localStorage.getItem("ss_theme");
-          var t = s || (window.matchMedia && window.matchMedia("(prefers-color-scheme: dark)").matches ? "dark" : "light");
-          document.documentElement.dataset.theme = t;
-        } catch (e) {}
-      })();
-    </script>
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
     <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" />
-    <link rel="stylesheet" href="css/style.css?v=8" />
-    <link rel="stylesheet" href="css/admin.css?v=17" />
+    <link rel="stylesheet" href="css/style.css?v=9" />
+    <link rel="stylesheet" href="css/admin.css?v=20" />
   </head>
   <body>
     <div class="app-shell">
 
       <!-- ══════════════ SIDEBAR ══════════════ -->
       <aside class="sidebar" id="sidebar">
-        <div class="sidebar-brand">
-          <div class="brand-dot">S</div>
-          <div class="brand-text">
-            <span class="brand-name">SmartSenior</span>
-            <span class="brand-sub">Admin Console</span>
-          </div>
-        </div>
-
         <nav class="sidebar-nav">
-          <button class="nav-item" data-section="dashboard">
+          <button class="nav-item active" data-section="new-profile">
             <span class="nav-icon">
-              <svg viewBox="0 0 20 20" fill="currentColor"><path d="M3 4a1 1 0 011-1h4a1 1 0 011 1v4a1 1 0 01-1 1H4a1 1 0 01-1-1V4zm0 8a1 1 0 011-1h4a1 1 0 011 1v4a1 1 0 01-1 1H4a1 1 0 01-1-1v-4zm8-8a1 1 0 011-1h4a1 1 0 011 1v4a1 1 0 01-1 1h-4a1 1 0 01-1-1V4zm0 8a1 1 0 011-1h4a1 1 0 011 1v4a1 1 0 01-1 1h-4a1 1 0 01-1-1v-4z"/></svg>
+              <svg viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M10 3a1 1 0 011 1v5h5a1 1 0 110 2h-5v5a1 1 0 11-2 0v-5H4a1 1 0 110-2h5V4a1 1 0 011-1z" clip-rule="evenodd"/></svg>
             </span>
-            <span data-i18n="nav.dashboard">Dashboard</span>
+            <span data-i18n="nav.newProfile">New Profile</span>
           </button>
           <button class="nav-item" data-section="new-family">
             <span class="nav-icon">
@@ -46,17 +28,13 @@
             </span>
             <span data-i18n="nav.newFamily">New Family</span>
           </button>
-          <button class="nav-item active" data-section="new-profile">
+          <button class="nav-item" data-section="dashboard">
             <span class="nav-icon">
-              <svg viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M10 3a1 1 0 011 1v5h5a1 1 0 110 2h-5v5a1 1 0 11-2 0v-5H4a1 1 0 110-2h5V4a1 1 0 011-1z" clip-rule="evenodd"/></svg>
+              <svg viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M8 4a4 4 0 100 8 4 4 0 000-8zM2 8a6 6 0 1110.89 3.476l4.817 4.817a1 1 0 01-1.414 1.414l-4.816-4.816A6 6 0 012 8z" clip-rule="evenodd"/></svg>
             </span>
-            <span data-i18n="nav.newProfile">New Profile</span>
+            <span data-i18n="nav.dashboard">Search</span>
           </button>
         </nav>
-
-        <div class="sidebar-foot">
-          <div class="rail-tenant" id="tenantBadge">—</div>
-        </div>
       </aside>
 
       <!-- ══════════════ MAIN ══════════════ -->
@@ -71,7 +49,6 @@
             <span class="page-subtitle" id="pageSubtitle"></span>
           </div>
           <div class="top-bar-right">
-            <button class="topbar-icon-btn" id="themeToggle" type="button" aria-label="Toggle dark mode" title="Toggle dark mode"></button>
             <div class="lang-switch" id="langSwitch">
               <button type="button" data-lang="en">EN</button>
               <button type="button" data-lang="ja">日本語</button>
@@ -88,44 +65,41 @@
 
         <main class="content">
 
-          <!-- ══ DASHBOARD — all profiles ══ -->
+          <!-- ══ SEARCH — family groups first, individuals second ══ -->
           <section id="sec-dashboard" class="section">
-            <div class="stat-cards" id="statCards"></div>
-            <div class="card">
-              <div class="card-row" style="margin-bottom:20px">
-                <h3 class="card-title" data-i18n="card.allProfiles">All Profiles</h3>
-                <div class="card-row-actions">
-                  <input id="profileSearch" type="search" placeholder="Search name or kaimyo…" data-i18n-ph="ph.filterName" aria-label="Filter profiles" />
-                  <button class="btn-secondary" id="refreshBtn" data-i18n="btn.refresh">↺ Refresh</button>
-                </div>
-              </div>
-              <div id="profileTable"><div class="spinner"></div></div>
+            <div class="search-tab-bar" id="searchTabBar">
+              <button type="button" class="search-tab active" data-tab="family">
+                <span data-i18n="stats.families">Family groups</span>
+                <span class="search-tab-count" id="tabCountFamily"></span>
+              </button>
+              <button type="button" class="search-tab" data-tab="individual">
+                <span data-i18n="stats.individuals">Individuals</span>
+                <span class="search-tab-count" id="tabCountIndividual"></span>
+              </button>
             </div>
-          </section>
 
-          <!-- ══ FAMILY MEMBERS ══ -->
-          <section id="sec-family" class="section">
-            <div class="card">
-              <div class="card-row" style="margin-bottom:20px">
-                <h3 class="card-title" data-i18n="fi.familyMembers">Family Members</h3>
-                <div class="card-row-actions">
-                  <input id="familySearchInput" type="search" placeholder="Filter by name…" data-i18n-ph="ph.filterName" aria-label="Filter family members" />
+            <div class="search-tab-panel" id="panel-family">
+              <div class="card">
+                <div class="card-row" style="margin-bottom:20px">
+                  <h3 class="card-title" data-i18n="fi.familyMembers">Family Members</h3>
+                  <div class="card-row-actions">
+                    <input id="familySearchInput" type="search" placeholder="Filter by name…" data-i18n-ph="ph.filterName" aria-label="Filter family members" />
+                  </div>
                 </div>
+                <div id="fiFamilyList"><div class="spinner"></div></div>
               </div>
-              <div id="fiFamilyList"><div class="spinner"></div></div>
             </div>
-          </section>
 
-          <!-- ══ INDIVIDUAL MEMBERS ══ -->
-          <section id="sec-individual" class="section">
-            <div class="card">
-              <div class="card-row" style="margin-bottom:20px">
-                <h3 class="card-title" data-i18n="fi.individualMembers">Individual Members</h3>
-                <div class="card-row-actions">
-                  <input id="individualSearchInput" type="search" placeholder="Filter by name…" data-i18n-ph="ph.filterName" aria-label="Filter individual members" />
+            <div class="search-tab-panel hidden" id="panel-individual">
+              <div class="card">
+                <div class="card-row" style="margin-bottom:20px">
+                  <h3 class="card-title" data-i18n="fi.individualMembers">Individual Members</h3>
+                  <div class="card-row-actions">
+                    <input id="individualSearchInput" type="search" placeholder="Filter by name…" data-i18n-ph="ph.filterName" aria-label="Filter individual members" />
+                  </div>
                 </div>
+                <div id="fiIndividualList"><div class="spinner"></div></div>
               </div>
-              <div id="fiIndividualList"><div class="spinner"></div></div>
             </div>
           </section>
 
@@ -362,7 +336,7 @@
 
     <script src="./js/qrcode.min.js"></script>
     <script type="module">
-      import { initAdminPortal } from "./js/admin.js?v=44";
+      import { initAdminPortal } from "./js/admin.js?v=50";
       initAdminPortal();
     </script>
   </body>

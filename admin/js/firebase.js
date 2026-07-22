@@ -32,6 +32,7 @@ import {
   limit,
   serverTimestamp,
   arrayRemove,
+  arrayUnion,
 } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
 import {
   getStorage,
@@ -130,6 +131,7 @@ export {
   limit,
   serverTimestamp,
   arrayRemove,
+  arrayUnion,
   storageRef,
   uploadBytesResumable,
   getDownloadURL,

@@ -29,50 +29,6 @@
   animation: panelIn 0.55s var(--ease-out) both;
 }
 
-.sidebar-brand {
-  display: flex;
-  align-items: center;
-  gap: 12px;
-  padding: 20px 18px 16px;
-  animation: fadeSlideIn 0.5s var(--ease-out) both;
-  animation-delay: 0.08s;
-}
-
-.brand-dot {
-  width: 40px;
-  height: 40px;
-  border-radius: 12px;
-  background: linear-gradient(150deg, var(--color-accent) 0%, var(--color-accent-dark) 100%);
-  color: var(--color-on-accent);
-  font-size: 1.05rem;
-  font-weight: 800;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  flex-shrink: 0;
-  box-shadow: 0 6px 14px rgba(42, 44, 48, 0.28);
-}
-
-.brand-text { display: flex; flex-direction: column; line-height: 1.2; min-width: 0; }
-
-.brand-name {
-  display: block;
-  font-size: 0.98rem;
-  font-weight: 700;
-  color: var(--color-text);
-  letter-spacing: -0.2px;
-  white-space: nowrap;
-}
-
-.brand-sub {
-  font-size: 0.7rem;
-  font-weight: 600;
-  color: var(--color-text-muted);
-  text-transform: uppercase;
-  letter-spacing: 0.6px;
-  white-space: nowrap;
-}
-
 .sidebar-nav {
   display: flex;
   flex-direction: column;
@@ -154,63 +110,6 @@
 .nav-icon svg { width: 20px; height: 20px; }
 
 .nav-item > span:not(.nav-icon) {
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
-}
-
-/* Sidebar footer — tenant card pinned to the bottom */
-.sidebar-foot {
-  padding: 12px;
-  border-top: 1px solid var(--color-border-soft);
-  animation: fadeSlideIn 0.5s var(--ease-out) both;
-  animation-delay: 0.3s;
-}
-
-.rail-tenant {
-  display: flex;
-  align-items: center;
-  gap: 10px;
-  width: 100%;
-  padding: 10px;
-  border-radius: var(--radius);
-  background: var(--color-bg-inset);
-  border: 1px solid var(--color-border-soft);
-  cursor: default;
-  transition: background 0.16s var(--ease-out);
-}
-
-.rail-tenant:hover { background: var(--color-chip); }
-
-.tenant-avatar {
-  width: 36px;
-  height: 36px;
-  border-radius: 10px;
-  background: linear-gradient(150deg, #9CA0A6 0%, var(--color-accent) 100%);
-  color: #fff;
-  font-size: 0.8rem;
-  font-weight: 700;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  flex-shrink: 0;
-  letter-spacing: 0.5px;
-}
-
-.tenant-meta { display: flex; flex-direction: column; line-height: 1.25; min-width: 0; }
-
-.tenant-name {
-  font-size: 0.85rem;
-  font-weight: 700;
-  color: var(--color-text);
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
-}
-
-.tenant-sub {
-  font-size: 0.72rem;
-  color: var(--color-text-muted);
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
@@ -408,33 +307,6 @@
   box-shadow: none;
 }
 
-/* Square icon button in the top bar (theme toggle) */
-.topbar-icon-btn {
-  width: 38px;
-  height: 38px;
-  min-width: 38px;
-  min-height: 38px;
-  padding: 0;
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  background: transparent;
-  background-image: none;
-  color: var(--color-text-muted);
-  border: 1px solid var(--color-border);
-  border-radius: 11px;
-  box-shadow: none;
-  transition: background 0.14s var(--ease-out), color 0.14s var(--ease-out), border-color 0.14s var(--ease-out);
-}
-
-.topbar-icon-btn svg { width: 18px; height: 18px; }
-
-.topbar-icon-btn:hover {
-  background: var(--hover-surface);
-  color: var(--color-text);
-  box-shadow: none;
-}
-
 /* ---- Content ---------------------------------------------------------------- */
 
 .content {
@@ -451,107 +323,58 @@
 .section.active .card {
   animation: riseIn 0.5s var(--ease-out) both;
 }
-.section.active .stat-cards + .card { animation-delay: 0.16s; }
+/* ---- Search tabs (Family groups / Individuals) --------------------------------- */
 
-/* ---- Stat cards -------------------------------------------------------------- */
-
-.stat-cards {
-  display: grid;
-  grid-template-columns: repeat(4, 1fr);
-  gap: 14px;
+.search-tab-bar {
+  display: inline-flex;
+  background: var(--color-chip);
+  border: 1px solid var(--color-border);
+  border-radius: 12px;
+  padding: 4px;
+  gap: 2px;
   margin-bottom: 18px;
 }
 
-@media (max-width: 1100px) { .stat-cards { grid-template-columns: repeat(2, 1fr); } }
-@media (max-width: 560px)  { .stat-cards { grid-template-columns: 1fr; } }
-
-.stat-card {
+.search-tab {
   display: flex;
   align-items: center;
-  gap: 14px;
-  padding: 18px;
-  background: var(--color-bg-card);
-  border: 1px solid var(--color-border-soft);
-  border-radius: var(--radius-lg);
-  box-shadow: var(--shadow-soft);
-  animation: statPop 0.5s var(--ease-out) both;
-  transition: transform 0.18s var(--ease-out), box-shadow 0.18s var(--ease-out);
-}
-
-.stat-card:hover {
-  transform: translateY(-2px);
-  box-shadow: 0 8px 24px rgba(23, 26, 31, 0.09);
-}
-
-/* Clickable stat cards (Family groups / Individuals) drill into their section */
-.stat-card-link { cursor: pointer; }
-
-.stat-card-link:hover {
-  border-color: var(--color-accent);
-  box-shadow: 0 8px 24px rgba(23, 26, 31, 0.12);
-}
-
-.stat-card-link:hover .stat-icon {
-  background: var(--color-accent);
-  color: var(--color-on-accent);
-}
-
-.stat-card-link:active { transform: translateY(0); }
-
-.stat-card-link:focus-visible {
-  outline: none;
-  border-color: var(--color-accent);
-  box-shadow: var(--focus-ring);
-}
-
-/* A subtle arrow that slides in on hover, hinting the card is a link */
-.stat-card-link .stat-go {
-  margin-left: auto;
-  align-self: center;
-  color: var(--color-text-muted);
-  opacity: 0;
-  transform: translateX(-4px);
-  transition: opacity 0.16s var(--ease-out), transform 0.16s var(--ease-out);
-  flex-shrink: 0;
-}
-
-.stat-card-link:hover .stat-go,
-.stat-card-link:focus-visible .stat-go {
-  opacity: 1;
-  transform: translateX(0);
-}
-
-.stat-icon {
-  width: 44px;
-  height: 44px;
-  border-radius: 13px;
-  background: var(--color-accent-soft);
-  color: var(--color-accent);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  flex-shrink: 0;
-}
-
-.stat-icon svg { width: 22px; height: 22px; }
-
-.stat-body { display: flex; flex-direction: column; line-height: 1.2; min-width: 0; }
-
-.stat-value {
-  font-size: 1.55rem;
-  font-weight: 800;
-  color: var(--color-text);
-  letter-spacing: -0.5px;
-  font-variant-numeric: tabular-nums;
-}
-
-.stat-label {
-  font-size: 0.76rem;
+  gap: 8px;
+  min-height: unset;
+  padding: 9px 18px;
+  font-size: 0.88rem;
   font-weight: 600;
   color: var(--color-text-muted);
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
+  background: transparent;
+  background-image: none;
+  border: none;
+  border-radius: 9px;
+  cursor: pointer;
+  box-shadow: none;
+  transition: background 0.14s var(--ease-out), color 0.14s var(--ease-out);
+}
+
+.search-tab:hover { color: var(--color-text); background: transparent; box-shadow: none; }
+
+.search-tab.active {
+  background: var(--color-bg-card);
+  color: var(--color-text);
+  box-shadow: 0 1px 3px rgba(23, 26, 31, 0.12);
+}
+
+.search-tab-count {
+  font-size: 0.74rem;
+  font-weight: 700;
+  color: var(--color-text-muted);
+  background: var(--color-bg-card);
+  border-radius: 8px;
+  padding: 1px 7px;
+  min-width: 18px;
+  text-align: center;
+}
+
+.search-tab.active .search-tab-count {
+  background: var(--color-accent-soft);
+  color: var(--color-accent);
 }
 
 /* ---- Card --------------------------------------------------------------------- */
@@ -1304,17 +1127,12 @@ tr[data-key]:hover .drill-chevron {
 /* ---- Responsive sidebar --------------------------------------------------------- */
 
 @media (max-width: 900px) {
-  /* Collapse to an icon rail — labels and tenant text hide, icons stay */
+  /* Collapse to an icon rail — labels hide, icons stay */
   .sidebar { width: 68px; }
-  .sidebar-brand { justify-content: center; padding: 18px 0 14px; }
-  .brand-text { display: none; }
   .sidebar-nav { padding: 6px 10px; align-items: center; }
   .nav-item { justify-content: center; padding: 0; width: 46px; }
   .nav-item > span:not(.nav-icon) { display: none; }
   .nav-item::before { display: none; }
-  .sidebar-foot { padding: 10px 8px; }
-  .rail-tenant { justify-content: center; padding: 8px 6px; }
-  .tenant-meta { display: none; }
 }
 
 @media (max-width: 768px) {
@@ -1346,6 +1164,10 @@ tr[data-key]:hover .drill-chevron {
 /* ── Family picker ── */
 
 .family-picker { display: flex; flex-direction: column; gap: 8px; }
+
+/* Add-member picker inside an open family's drill-down */
+.family-add-picker { max-width: 420px; margin: 4px 0 18px; }
+.family-add-picker .field-hint { margin: 0 0 2px; }
 
 .family-search-row { position: relative; }
 .family-search-row input {
@@ -1623,13 +1445,3 @@ tr[data-key]:hover .drill-chevron {
   border-color: #D0D3D8;
 }
 .qr-modal .btn-secondary:hover { background: #F1F3F5; }
-
-/* ---- Dark-mode component tweaks -------------------------------------------- */
-
-/* The active language pill sits on the (darker) chip track, so give it a
-   lighter surface in dark mode to keep reading as "raised / selected". */
-:root[data-theme="dark"] .lang-switch button.active {
-  background: #3B3E44;
-  color: var(--color-text);
-  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.4);
-}

@@ -18,18 +18,17 @@ import {
   withTenant,
   serverTimestamp,
   arrayRemove,
+  arrayUnion,
   storageRef,
   uploadBytesResumable,
   getDownloadURL,
   deleteObject,
   COLLECTIONS,
   TENANT_ID,
-  ROLE,
-  DISPLAY_NAME,
   personMediaCollection,
   personMediaDoc,
-} from "./firebase.js?v=6";
-import { t, getLang, setLang, applyStaticI18n, onLangChange } from "./i18n.js?v=27";
+} from "./firebase.js?v=7";
+import { t, getLang, setLang, applyStaticI18n, onLangChange } from "./i18n.js?v=30";
 
 // ── State ───────────────────────────────────────────────────────────────────
 
@@ -97,6 +96,7 @@ function matchesProfileQuery(person, rawQuery) {
 let dashboardPersons = [];  // cached for the family/individual panel search
 let familyRecords = [];     // named family docs (the `families` collection)
 let selectedFamilyKey = null; // Family page: which family is drilled into (null = families list)
+let activeSearchTab = "family"; // Search section: "family" | "individual" — family shown first
 let entityIds = { family: new Map(), person: new Map() }; // display IDs (KDR-F0001, KDR-F0001-01, KDR-I0001)
 let currentSection = "dashboard";
 let sortField = "last_name"; // last_name | first_name | death_date | created_at
@@ -132,12 +132,11 @@ function showSection(name, opts = {}) {
   const titleEl = document.getElementById("pageTitle");
   if (titleEl) titleEl.textContent = currentPageTitle();
   const subEl = document.getElementById("pageSubtitle");
-  if (subEl) subEl.textContent = t(`sub.${name}`);
+  if (subEl) subEl.textContent = name === "dashboard" ? t(`sub.${activeSearchTab}`) : t(`sub.${name}`);
 
-  // Lazy-load sections. Family/individual share the dashboard's data load,
-  // which populates the recent-profiles table and both member lists.
-  if (name === "dashboard") loadProfileList();
-  if (name === "family" || name === "individual") loadMembers();
+  // Search holds both the Family and Individual tabs — load once and render
+  // whichever tab is currently active.
+  if (name === "dashboard") loadSearchData();
 
   // Give this section its own browser-history entry so Back/Forward moves
   // between in-app sections instead of leaving the app. Skipped when we're
@@ -217,17 +216,52 @@ function clearFormStatus() {
   if (el) el.classList.add("hidden");
 }
 
-// ── Member panels (Family / Individual tabs) ──────────────────────────────────
+// ── Search tabs (Family groups / Individuals) ─────────────────────────────────
+// Family and Individual are two panels of the same Search section, switched
+// client-side (not separate history-tracked sections) — Family shown first.
 
-async function loadMembers() {
+/** Reflects `tab` in the tab bar / panel visibility, without touching which
+ *  family (if any) is drilled into — used both for a deliberate tab click and
+ *  for restoring state (e.g. the Back button from Edit Profile). */
+function setActiveSearchTab(tab) {
+  activeSearchTab = tab;
+  document.querySelectorAll(".search-tab").forEach((btn) =>
+    btn.classList.toggle("active", btn.dataset.tab === tab)
+  );
+  document.getElementById("panel-family")?.classList.toggle("hidden", tab !== "family");
+  document.getElementById("panel-individual")?.classList.toggle("hidden", tab !== "individual");
+  if (currentSection === "dashboard") {
+    const subEl = document.getElementById("pageSubtitle");
+    if (subEl) subEl.textContent = t(`sub.${tab}`);
+  }
+}
+
+/** A deliberate switch to `tab` (tab click or fresh entry into Search) — always
+ *  lands on that tab's top level, unlike setActiveSearchTab alone. */
+function switchSearchTab(tab) {
+  if (tab === "family") selectedFamilyKey = null;
+  setActiveSearchTab(tab);
+  renderFamilyIndividualPanel();
+}
+
+function updateSearchTabCounts() {
+  const famCount = document.getElementById("tabCountFamily");
+  const indCount = document.getElementById("tabCountIndividual");
+  if (famCount) famCount.textContent = buildFamilies().length;
+  if (indCount) indCount.textContent = dashboardPersons.length;
+}
+
+async function loadSearchData() {
   try {
-    const personSnap = await getDocs(tenantQuery(COLLECTIONS.persons));
-    dashboardPersons = personSnap.docs.map((d) => ({ id: d.id, ...d.data() }));
+    const snap = await getDocs(tenantQuery(COLLECTIONS.persons));
+    allProfiles = snap.docs.map((d) => ({ id: d.id, ...d.data() }));
+    dashboardPersons = allProfiles;
     await loadFamilies();
     recomputeEntityIds();
     renderFamilyIndividualPanel();
+    updateSearchTabCounts();
   } catch (err) {
-    console.error("[members] load failed:", err);
+    console.error("[search] load failed:", err);
     if (err.message?.includes("index")) {
       setStatus(t("status.indexNeeded"), "error");
     }
@@ -248,11 +282,11 @@ async function loadFamilies() {
   }
 }
 
-// ── Family / individual member sections ───────────────────────────────────────
-// A person counts as a "family member" once they're linked to at least one
-// other profile via related_persons (kept bidirectional on save); everyone
-// else shows up as an individual with no family group. Both drill-down sections
-// render the same profiles table as the dashboard, just filtered differently.
+// ── Family / individual tab panels ────────────────────────────────────────────
+// Family groups people who are linked via related_persons (or a named family
+// record); Individuals lists every person at this site, flat, regardless of
+// family links. Both panels render the same profiles table, just pre-filtered
+// differently.
 
 function renderFamilyIndividualPanel() {
   renderFamilySection();
@@ -312,7 +346,9 @@ function tenantCode() {
 
 // Build the display-ID maps for the current data:
 //   family key   → "KDR-F0001"
-//   person id    → "KDR-F0001-01" (family member) or "KDR-I0001" (individual)
+//   person id    → "KDR-I0001-01" (family member — reuses their family's
+//                  number, since a person is an individual record even when
+//                  nested inside a family) or "KDR-I0002" (standalone individual)
 // Families are numbered in their stable list order; individuals by age. IDs are
 // derived for display only (admin) — not persisted.
 function recomputeEntityIds() {
@@ -321,10 +357,10 @@ function recomputeEntityIds() {
   const person = new Map();
 
   buildFamilies().forEach((f, i) => {
-    const fid = `${code}-F${String(i + 1).padStart(4, "0")}`;
-    family.set(f.key, fid);
+    const famNum = String(i + 1).padStart(4, "0");
+    family.set(f.key, `${code}-F${famNum}`);
     f.members.forEach((p, j) => {
-      person.set(p.id, `${fid}-${String(j + 1).padStart(2, "0")}`);
+      person.set(p.id, `${code}-I${famNum}-${String(j + 1).padStart(2, "0")}`);
     });
   });
 
@@ -339,13 +375,13 @@ function recomputeEntityIds() {
   entityIds = { family, person };
 }
 
-// Individual view: people with no family links AND not in any family record.
+// Individual tab: every person at this site, flat (not grouped by family) —
+// matches the Individuals tab's count badge.
 function renderIndividualSection() {
   const el = document.getElementById("fiIndividualList");
   if (!el) return;
-  const covered = familyMemberIdSet();
   const q = document.getElementById("individualSearchInput")?.value || "";
-  let pool = dashboardPersons.filter((p) => !(p.related_persons || []).length && !covered.has(p.id));
+  let pool = dashboardPersons;
   if (q.trim()) pool = pool.filter((p) => matchesProfileQuery(p, q));
   renderPersonsTable(el, pool, dashboardPersons);
 }
@@ -370,11 +406,21 @@ function renderFamilySection() {
   // Level 2 — a family is open: its members as the same table as the dashboard.
   const open = selectedFamilyKey && families.find((f) => f.key === selectedFamilyKey);
   if (open) {
+    // Adding a member always works, even for a "legacy" family with no
+    // Firestore record yet (grouped purely by matching related_persons +
+    // surname) — addMemberToFamily promotes it to a named record on first add.
     el.innerHTML = `
       <div class="drill-header">
         <button type="button" class="btn-secondary" id="familyBackBtn">${t("fi.backToFamilies")}</button>
         <span class="drill-title">${esc(open.name)}</span>
         <span class="entity-id">${esc(entityIds.family.get(open.key) || "")}</span>
+      </div>
+      <div class="family-picker family-add-picker">
+        <p class="field-hint">${esc(t("fi.addMemberLabel"))}</p>
+        <div class="family-search-row">
+          <input id="famAddSearch" type="search" placeholder="${esc(t("fi.addMemberPh"))}" autocomplete="off" />
+        </div>
+        <ul class="family-suggestions hidden" id="famAddSuggestions"></ul>
       </div>
       <div id="familyMembersTable"></div>`;
     const tableEl = document.getElementById("familyMembersTable");
@@ -387,6 +433,7 @@ function renderFamilySection() {
       selectedFamilyKey = null;
       renderFamilySection();
     });
+    wireFamilyAddPicker(open.key, open.members);
     return;
   }
 
@@ -495,11 +542,121 @@ async function deleteFamily(key) {
     selectedFamilyKey = null;
     recomputeEntityIds();
     renderFamilyIndividualPanel();
-    renderStats(allProfiles);
+    updateSearchTabCounts();
     setStatus(t("status.familyDeleted", { name: fam.name }), "success");
   } catch (err) {
     console.error("[admin] delete family failed:", err);
     setStatus(t("status.deleteFailed", { msg: err.message }), "error");
+  }
+}
+
+// Search-and-add picker inside an open family's drill-down — lets an admin
+// add existing profiles to a family after it's been created, not just at
+// creation time. Re-wired on every render since the drill view's markup is
+// rebuilt from scratch each time (innerHTML). Uses blur (not a document-level
+// click listener) to close suggestions, so old listeners never pile up across
+// re-renders.
+function wireFamilyAddPicker(famKey, existingMembers) {
+  const input = document.getElementById("famAddSearch");
+  const suggestions = document.getElementById("famAddSuggestions");
+  if (!input || !suggestions) return;
+  const excludeIds = new Set(existingMembers.map((m) => m.id));
+
+  input.addEventListener("input", () => {
+    const q = input.value.toLowerCase().trim();
+    if (!q) { suggestions.classList.add("hidden"); return; }
+
+    const matches = allProfiles.filter((p) => {
+      if (excludeIds.has(p.id)) return false;
+      return matchesNameQuery(p, q) || matchesKaimyoQuery(p, q);
+    }).slice(0, 6);
+
+    if (!matches.length) { suggestions.classList.add("hidden"); return; }
+
+    suggestions.innerHTML = matches.map((p) => {
+      const initials = ((p.last_name || "").charAt(0) + (p.first_name || "").charAt(0)) || "✦";
+      const kaimyo = p.kaimyo || p.posthumous_name || "";
+      return `
+      <li class="family-suggestion-item" data-id="${p.id}">
+        <span class="suggestion-avatar">${esc(initials)}</span>
+        <span class="suggestion-body">
+          <span class="suggestion-name">${esc(p.first_name)} ${esc(p.last_name)}${p.death_date ? ` <span class="suggestion-year">(${esc(p.death_date.slice(0, 4))})</span>` : ""}</span>
+          ${kaimyo ? `<span class="suggestion-kaimyo">${esc(kaimyo)}</span>` : ""}
+        </span>
+      </li>`;
+    }).join("");
+    suggestions.classList.remove("hidden");
+
+    suggestions.querySelectorAll(".family-suggestion-item").forEach((item) => {
+      item.addEventListener("mousedown", (e) => {
+        e.preventDefault(); // keep focus so the blur-hide below doesn't beat the click
+        addMemberToFamily(famKey, item.dataset.id);
+      });
+    });
+  });
+
+  input.addEventListener("keydown", (e) => { if (e.key === "Enter") e.preventDefault(); });
+  input.addEventListener("blur", () => {
+    setTimeout(() => suggestions.classList.add("hidden"), 150);
+  });
+}
+
+// Add an existing profile to a family. Named records just extend member_ids;
+// a "legacy" family (grouped only by matching related_persons + surname, no
+// Firestore doc) is promoted to a named record first, since otherwise a new
+// member with a different surname wouldn't show up in the group at all — the
+// legacy grouping in buildFamilies() keys purely off each person's own
+// last_name. Either way, the person is linked bidirectionally with every
+// current member (related_persons) so kiosk family navigation still works.
+async function addMemberToFamily(key, personId) {
+  const fam = buildFamilies().find((f) => f.key === key);
+  const person = allProfiles.find((p) => p.id === personId);
+  if (!fam || !person) return;
+
+  setStatus(t("status.saving"), "info");
+  try {
+    const existingIds = fam.members.map((m) => m.id);
+    let recordId = key.startsWith("rec:") ? key.slice(4) : null;
+
+    if (recordId) {
+      await updateDoc(doc(db, COLLECTIONS.families, recordId), {
+        member_ids: arrayUnion(personId),
+        updated_at: serverTimestamp(),
+      });
+    } else {
+      const ref = await addDoc(collection(db, COLLECTIONS.families), withTenant({
+        name: fam.name,
+        member_ids: [...existingIds, personId],
+        updated_at: serverTimestamp(),
+      }));
+      recordId = ref.id;
+    }
+
+    if (existingIds.length) {
+      await updateDoc(doc(db, COLLECTIONS.persons, personId), {
+        related_persons: arrayUnion(...existingIds),
+        updated_at: serverTimestamp(),
+      });
+      for (const id of existingIds) {
+        await updateDoc(doc(db, COLLECTIONS.persons, id), {
+          related_persons: arrayUnion(personId),
+          updated_at: serverTimestamp(),
+        });
+      }
+    }
+
+    await loadFamilies();
+    const snap = await getDocs(tenantQuery(COLLECTIONS.persons));
+    allProfiles = snap.docs.map((d) => ({ id: d.id, ...d.data() }));
+    dashboardPersons = allProfiles;
+    recomputeEntityIds();
+    selectedFamilyKey = `rec:${recordId}`; // legacy families get a new key once promoted
+    renderFamilySection();
+    updateSearchTabCounts();
+    setStatus(t("status.memberAdded", { name: `${person.last_name || ""}${person.first_name || ""}`.trim() }), "success");
+  } catch (err) {
+    console.error("[admin] add member failed:", err);
+    setStatus(t("status.saveFailed", { msg: err.message }), "error");
   }
 }
 
@@ -518,106 +675,9 @@ function sortProfiles(list) {
   });
 }
 
-// ── Dashboard stat cards ──────────────────────────────────────────────────────
-
-/** Animate a number from 0 to `target` inside `el` (respects reduced motion). */
-function countUp(el, target) {
-  const reduced = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
-  if (reduced || target === 0) { el.textContent = target; return; }
-  const dur = 600;
-  const start = performance.now();
-  function tick(now) {
-    const p = Math.min((now - start) / dur, 1);
-    // ease-out cubic
-    el.textContent = Math.round(target * (1 - Math.pow(1 - p, 3)));
-    if (p < 1) requestAnimationFrame(tick);
-  }
-  requestAnimationFrame(tick);
-}
-
-function renderStats(persons) {
-  const wrap = document.getElementById("statCards");
-  if (!wrap) return;
-
-  // Families = named records (incl. empty) + legacy families derived from links.
-  // Individuals = people with no links and not in any family record.
-  const covered = familyMemberIdSet();
-  const familyGroups = buildFamilies().length;
-  const individuals = persons.filter((p) => !(p.related_persons || []).length && !covered.has(p.id)).length;
-
-  const now = new Date();
-  const monthStart = new Date(now.getFullYear(), now.getMonth(), 1).getTime() / 1000;
-  const thisMonth = persons.filter((p) => (p.created_at?.seconds ?? 0) >= monthStart).length;
-
-  // `section` marks a card as a shortcut into its member list — clicking
-  // "Family groups" / "Individuals" drills straight into that section.
-  const stats = [
-    { key: "stats.total",       value: persons.length, icon: '<svg viewBox="0 0 20 20" fill="currentColor"><path d="M9 6a3 3 0 11-6 0 3 3 0 016 0zM17 6a3 3 0 11-6 0 3 3 0 016 0zM12.93 17c.046-.327.07-.66.07-1a6.97 6.97 0 00-1.5-4.33A5 5 0 0119 16v1h-6.07zM6 11a5 5 0 015 5v1H1v-1a5 5 0 015-5z"/></svg>' },
-    { key: "stats.families",    value: familyGroups,   section: "family",     icon: '<svg viewBox="0 0 20 20" fill="currentColor"><path d="M10.707 2.293a1 1 0 00-1.414 0l-7 7a1 1 0 001.414 1.414L4 10.414V17a1 1 0 001 1h2a1 1 0 001-1v-2a1 1 0 011-1h2a1 1 0 011 1v2a1 1 0 001 1h2a1 1 0 001-1v-6.586l.293.293a1 1 0 001.414-1.414l-7-7z"/></svg>' },
-    { key: "stats.individuals", value: individuals,    section: "individual", icon: '<svg viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M10 9a3 3 0 100-6 3 3 0 000 6zm-7 9a7 7 0 1114 0H3z" clip-rule="evenodd"/></svg>' },
-    { key: "stats.thisMonth",   value: thisMonth,      icon: '<svg viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M6 2a1 1 0 00-1 1v1H4a2 2 0 00-2 2v10a2 2 0 002 2h12a2 2 0 002-2V6a2 2 0 00-2-2h-1V3a1 1 0 10-2 0v1H7V3a1 1 0 00-1-1zm0 5a1 1 0 000 2h8a1 1 0 100-2H6z" clip-rule="evenodd"/></svg>' },
-  ];
-
-  const goArrow = '<svg class="stat-go" viewBox="0 0 20 20" fill="currentColor" width="18" height="18"><path fill-rule="evenodd" d="M7.293 14.707a1 1 0 010-1.414L10.586 10 7.293 6.707a1 1 0 011.414-1.414l4 4a1 1 0 010 1.414l-4 4a1 1 0 01-1.414 0z" clip-rule="evenodd"/></svg>';
-
-  wrap.innerHTML = stats.map((s, i) => `
-    <div class="stat-card${s.section ? " stat-card-link" : ""}"${s.section ? ` data-section="${s.section}" role="button" tabindex="0"` : ""} style="animation-delay:${0.05 + i * 0.06}s">
-      <div class="stat-icon">${s.icon}</div>
-      <div class="stat-body">
-        <div class="stat-value" data-value="${s.value}">0</div>
-        <div class="stat-label">${t(s.key)}</div>
-      </div>
-      ${s.section ? goArrow : ""}
-    </div>`).join("");
-
-  wrap.querySelectorAll(".stat-value").forEach((el) =>
-    countUp(el, Number(el.dataset.value))
-  );
-
-  // Wire the shortcut cards — activeNav stays "dashboard" so the sidebar keeps
-  // Dashboard highlighted while showing these drill-down sections.
-  wrap.querySelectorAll(".stat-card-link").forEach((card) => {
-    const go = () => {
-      // Opening the Family card always starts at the families list, not a
-      // family that happened to be drilled into earlier.
-      if (card.dataset.section === "family") selectedFamilyKey = null;
-      showSection(card.dataset.section, { activeNav: "dashboard" });
-    };
-    card.addEventListener("click", go);
-    card.addEventListener("keydown", (e) => {
-      if (e.key === "Enter" || e.key === " ") { e.preventDefault(); go(); }
-    });
-  });
-}
-
-async function loadProfileList() {
-  const wrap = document.getElementById("profileTable");
-  if (!wrap) return;
-  wrap.innerHTML = '<div class="spinner"></div>';
-
-  try {
-    // No orderBy in Firestore query — avoids requiring a composite index.
-    // Sorting is done client-side so profiles always load even without indexes.
-    const snap = await getDocs(tenantQuery(COLLECTIONS.persons));
-    allProfiles = snap.docs.map((d) => ({ id: d.id, ...d.data() }));
-    dashboardPersons = allProfiles;
-    await loadFamilies();
-    recomputeEntityIds();
-    renderProfileTable(allProfiles);
-    renderStats(allProfiles);
-  } catch (err) {
-    console.error("[profiles] list failed:", err);
-    wrap.innerHTML = `<p class="empty-state" style="color:var(--color-danger)">${t("empty.loadFail")}</p>`;
-  }
-}
-
 function sortIcon(field) {
   if (sortField !== field) return '<span class="sort-icon">↕</span>';
   return `<span class="sort-icon active">${sortDir === "asc" ? "↑" : "↓"}</span>`;
-}
-
-function renderProfileTable(persons) {
-  renderPersonsTable(document.getElementById("profileTable"), persons, allProfiles);
 }
 
 /**
@@ -1118,9 +1178,9 @@ async function saveFamilyBuilder() {
     renderFamilyBuilder();
     setStatus(t("nf.created", { name }), "success");
 
-    // Jump to the Family page so the new family is visible right away.
-    selectedFamilyKey = null;
-    showSection("family", { activeNav: "dashboard" });
+    // Jump to the Family tab so the new family is visible right away.
+    switchSearchTab("family");
+    showSection("dashboard", { activeNav: "dashboard" });
   } catch (err) {
     console.error("[admin] create family failed:", err);
     setStatus(t("nf.createFailed", { msg: err.message || err }), "error");
@@ -1423,11 +1483,10 @@ async function deleteProfile(person) {
       }
     }
     recomputeEntityIds();
-    renderProfileTable(allProfiles);
-    renderStats(allProfiles);
-    // Delete can be triggered from the Family / Individual tables too — refresh
-    // whichever of those is showing so the removed row disappears immediately.
+    // Delete can be triggered from either Search tab — refresh both so the
+    // removed row disappears immediately regardless of which one is showing.
     renderFamilyIndividualPanel();
+    updateSearchTabCounts();
   } catch (err) {
     console.error("[admin] delete failed:", err);
     setStatus(t("status.deleteFailed", { msg: err.message }), "error");
@@ -1646,8 +1705,7 @@ function syncLangButtons() {
 function retranslateDynamic() {
   syncLangButtons();
   setText("pageTitle", currentPageTitle());
-  setText("pageSubtitle", t(`sub.${currentSection}`));
-  renderStats(allProfiles);
+  setText("pageSubtitle", currentSection === "dashboard" ? t(`sub.${activeSearchTab}`) : t(`sub.${currentSection}`));
 
   // Form chrome reflects whether we're editing
   const saveBtn = document.getElementById("saveBtn");
@@ -1660,8 +1718,10 @@ function retranslateDynamic() {
   }
 
   // Re-render data views currently on screen
-  if (currentSection === "dashboard") renderProfileTable(allProfiles);
-  if (currentSection === "family" || currentSection === "individual") renderFamilyIndividualPanel();
+  if (currentSection === "dashboard") {
+    renderFamilyIndividualPanel();
+    updateSearchTabCounts();
+  }
 }
 
 // ── Bootstrap ────────────────────────────────────────────────────────────────
@@ -1681,28 +1741,6 @@ export function initAdminPortal() {
     window.location.href = "login.html";
   });
 
-  // Theme toggle — flips light/dark, persists the choice, and syncs its icon.
-  // (The <head> script already applied the stored/system theme before paint.)
-  const MOON_ICON = '<svg viewBox="0 0 20 20" fill="currentColor"><path d="M17.293 13.293A8 8 0 016.707 2.707a8.001 8.001 0 1010.586 10.586z"/></svg>';
-  const SUN_ICON = '<svg viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M10 2a1 1 0 011 1v1a1 1 0 11-2 0V3a1 1 0 011-1zm4 8a4 4 0 11-8 0 4 4 0 018 0zm-.464 4.95l.707.707a1 1 0 001.414-1.414l-.707-.707a1 1 0 00-1.414 1.414zm2.12-10.607a1 1 0 010 1.414l-.706.707a1 1 0 11-1.414-1.414l.707-.707a1 1 0 011.414 0zM17 11a1 1 0 100-2h-1a1 1 0 100 2h1zm-7 4a1 1 0 011 1v1a1 1 0 11-2 0v-1a1 1 0 011-1zM5.05 6.464A1 1 0 106.465 5.05l-.708-.707a1 1 0 00-1.414 1.414l.707.707zm1.414 8.486l-.707.707a1 1 0 01-1.414-1.414l.707-.707a1 1 0 011.414 1.414zM4 11a1 1 0 100-2H3a1 1 0 000 2h1z" clip-rule="evenodd"/></svg>';
-  const themeBtn = document.getElementById("themeToggle");
-  if (themeBtn) {
-    const syncThemeIcon = (theme) => {
-      const dark = theme === "dark";
-      themeBtn.innerHTML = dark ? SUN_ICON : MOON_ICON;
-      const label = dark ? "Switch to light mode" : "Switch to dark mode";
-      themeBtn.setAttribute("aria-label", label);
-      themeBtn.title = label;
-    };
-    syncThemeIcon(document.documentElement.dataset.theme || "light");
-    themeBtn.addEventListener("click", () => {
-      const next = document.documentElement.dataset.theme === "dark" ? "light" : "dark";
-      document.documentElement.dataset.theme = next;
-      try { localStorage.setItem("ss_theme", next); } catch {}
-      syncThemeIcon(next);
-    });
-  }
-
   // Language: apply saved choice + wire the EN / 日本語 switch
   document.documentElement.lang = getLang();
   applyStaticI18n();
@@ -1715,8 +1753,10 @@ export function initAdminPortal() {
   onLangChange(retranslateDynamic);
 
   // Memorial site name — shown in the top bar next to the page title so the
-  // admin always knows which site they're managing. The raw tenant id is a
-  // slug ("tokyo_reien"), so prettify it for display ("Tokyo Reien").
+  // admin always knows which site they're managing. Prefer the tenant's real
+  // display name from its config doc (so renaming the tenant updates this
+  // everywhere); until that resolves, fall back to prettifying the slug
+  // ("tokyo_reien" → "Tokyo Reien").
   const prettySite = (TENANT_ID || "")
     .replace(/[-_]+/g, " ")
     .replace(/\b\w/g, (c) => c.toUpperCase())
@@ -1726,45 +1766,34 @@ export function initAdminPortal() {
   if (siteEl) {
     siteEl.textContent = prettySite;
     siteEl.title = TENANT_ID;
-  }
-
-  // Sidebar footer — the signed-in admin's identity (name over role).
-  const tenantEl = document.getElementById("tenantBadge");
-  if (tenantEl) {
-    const who = DISPLAY_NAME || "—";
-    const role = (ROLE || "admin").replace(/\b\w/g, (c) => c.toUpperCase());
-    const initials = who.split(/\s+/).map((w) => w.charAt(0)).slice(0, 2).join("").toUpperCase();
-    tenantEl.innerHTML = `
-      <span class="tenant-avatar">${esc(initials)}</span>
-      <span class="tenant-meta">
-        <span class="tenant-name">${esc(who)}</span>
-        <span class="tenant-sub">${esc(role)}</span>
-      </span>`;
-    tenantEl.title = who;
+    getDoc(doc(db, COLLECTIONS.tenants, TENANT_ID))
+      .then((snap) => {
+        const name = snap.exists() ? (snap.data().name || "").trim() : "";
+        if (name) { siteEl.textContent = name; siteEl.title = name; }
+      })
+      .catch(() => {});
   }
 
   // Sidebar nav
   document.querySelectorAll("[data-section]").forEach((el) => {
     el.addEventListener("click", () => {
       if (el.dataset.section === "new-profile") resetForm();
+      // A deliberate click on "Search" always lands on the Family tab first —
+      // a family drilled into on an earlier visit shouldn't linger.
+      if (el.dataset.section === "dashboard") switchSearchTab("family");
       showSection(el.dataset.section);
     });
+  });
+
+  // Search tabs — Family groups shown first, Individuals second
+  document.querySelectorAll(".search-tab").forEach((btn) => {
+    btn.addEventListener("click", () => switchSearchTab(btn.dataset.tab));
   });
 
   // Profiles section "New Profile" button
   document.getElementById("addProfileBtn")?.addEventListener("click", () => {
     resetForm();
     showSection("new-profile");
-  });
-
-  // Profiles section refresh
-  document.getElementById("refreshBtn")?.addEventListener("click", loadProfileList);
-
-  // Client-side name filter
-  document.getElementById("profileSearch")?.addEventListener("input", (e) => {
-    const q = e.target.value;
-    const filtered = q.trim() ? allProfiles.filter((p) => matchesProfileQuery(p, q)) : allProfiles;
-    renderProfileTable(filtered);
   });
 
   // Dashboard family/individual panel search
