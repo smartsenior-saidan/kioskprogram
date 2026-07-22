@@ -1,6 +1,7 @@
-Links to Each Tenants site
+# Remove total section
 
-kiosk.saidans.org?site=testtenant1
+# Flip ID
 
-#Id NUmber assognment per person with KDR - F0001
-KDR - F0001 - 01
+# Tokyo - Rein, Demo Memorial , Kodaira memorial
+
+# New profile > New Family -> search
